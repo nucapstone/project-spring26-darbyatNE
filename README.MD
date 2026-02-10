@@ -26,7 +26,7 @@ conda env create -f environment.yml
 conda activate lmp-env
 # Install npm package manager
 npm install
-# Run the app
+# Run the application
 npm run dev
 ```
 ---
@@ -51,4 +51,4 @@ npm run dev
 
 Feedback and suggestions are welcome. Please send your thoughts to:
 
-**Ben Darby:** email - darby.b@northeastern.edu
+Please email **Ben Darby** @ darby.b@northeastern.edu
