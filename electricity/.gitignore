@@ -1,0 +1,6 @@
+.env
+misc/
+*.pyc
+__pycache__/
+static/
+node_modules/

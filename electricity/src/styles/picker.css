@@ -1,0 +1,108 @@
+/* src/styles/picker.css */
+
+.picker-container {
+  font-family: system-ui, -apple-system, sans-serif;
+  max-width: 800px;
+}
+
+.picker-control-frame {
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.picker-section {
+  margin-bottom: 15px;
+}
+
+.picker-label {
+  font-weight: bold;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.picker-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.picker-toggle-container {
+  font-size: 11px;
+  display: flex;
+  gap: 10px;
+}
+
+.picker-select {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.picker-date-inputs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.picker-date-input {
+  flex: 1;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.picker-day-btn {
+  flex: 1;
+  padding: 6px 0;
+  border: 1px solid #007bff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.picker-day-btn.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.picker-day-btn.inactive {
+  background-color: white;
+  color: #007bff;
+}
+
+.picker-action-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.picker-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.picker-btn-secondary {
+  background-color: white;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+.picker-btn-primary {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  font-weight: bold;
+}
