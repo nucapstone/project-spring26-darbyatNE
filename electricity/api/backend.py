@@ -9,6 +9,13 @@ from sqlalchemy.orm import sessionmaker, Session
 import collections
 from pydantic import BaseModel
 from typing import Optional, List
+import csv
+from sqlalchemy import func 
+
+import logging
+
+# Set up logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 load_dotenv()
 app = FastAPI()
@@ -53,6 +60,73 @@ class LmpRangeQuery(BaseModel):
     monitored_facility: Optional[str] = None
 
 # --- API Endpoints ---
+
+@app.get("/api/service-terr")
+def get_service_territories(db: Session = Depends(get_db)):
+    logging.info("Received request for service territories.")
+    try:
+        # PATH TO CSV
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(base_dir, "..", "src", "hydrate", "retail", "utility_names.csv")
+        
+        logging.info(f"Checking CSV Path: {csv_path}, Exists: {os.path.exists(csv_path)}")
+
+        target_names = []
+        if os.path.exists(csv_path):
+            with open(csv_path, mode='r', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    territory_name = row.get("TERRITORIES_TO_MAP")
+                    if territory_name and territory_name.strip():
+                        cleaned_name = territory_name.strip()  # Keep original case
+                        target_names.append(cleaned_name)
+                        logging.info(f"Extracted territory name: {cleaned_name}")  # Debugging log
+        else:
+            logging.warning(f"CSV not found at {csv_path}")
+            return {"type": "FeatureCollection", "features": []}
+
+        logging.info(f"Target Names: {target_names}")
+
+        if not target_names:
+            logging.info("No valid target names found in the CSV.")
+            return {"type": "FeatureCollection", "features": []}
+
+        # Update SQL query to use exact case matching
+        query = text("""
+            SELECT 
+                name, 
+                id,
+                ST_AsGeoJSON(wkb_geometry) as geometry_geojson
+            FROM service_territories
+            WHERE name = ANY(:names)  -- Use exact case matching
+        """)
+        
+        logging.info(f"Executing SQL query with target names: {target_names}")
+        result = db.execute(query, {"names": target_names})
+        
+        features = []
+        for row in result.fetchall():
+            row_dict = row._asdict()
+            geometry = json.loads(row_dict['geometry_geojson'])
+            feature = {
+                "type": "Feature",
+                "geometry": geometry,
+                "properties": {
+                    "name": row_dict['name'],
+                    "id": row_dict['id']
+                }
+            }
+            features.append(feature)
+
+        logging.info(f"Number of features found: {len(features)}")
+        return {
+            "type": "FeatureCollection", 
+            "features": features
+        }
+
+    except Exception as e:
+        logging.exception("Server Error in get_service_territories")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/zones")
 def get_zones(db: Session = Depends(get_db)):

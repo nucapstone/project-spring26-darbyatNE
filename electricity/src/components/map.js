@@ -1,5 +1,3 @@
-// src/components/map.js
-
 import maplibregl from "npm:maplibre-gl";
 import * as d3 from "npm:d3";
 
@@ -10,7 +8,6 @@ import { dateTimeRangePicker } from "./picker.js";
 
 import { API_BASE_URL, ZONE_LABEL_OVERRIDES, COLOR_SCALE, NET_COLOR_SCALE } from "../utils/config.js";
 import { MapController } from "../managers/app_controller.js";
-
 
 export function initApp() {
     // 1. Initialize Map
@@ -41,19 +38,22 @@ export function initApp() {
     // 3. Map Load Logic
     map.on('load', async () => {
         try {
-            const shapesResponse = await fetch(`${API_BASE_URL}/api/zones`);
+            // Fetch service territories from the new API endpoint
+            const shapesResponse = await fetch(`${API_BASE_URL}/api/service-terr`);
             const shapes = await shapesResponse.json();
 
-            // 🚨 SAVE GLOBALLY & GENERATE MASK FOR CONTOURS
+            // Save globally & generate mask for contours if needed
             window.pjmGeoJsonData = shapes;
+            // Assuming you have some contour logic, adjust accordingly
             if (controller.contourLayer) {
                 controller.contourLayer.generateMaskFromZones(shapes);
             }
 
+            // Adjust properties as needed
             shapes.features.forEach(f => {
-                f.properties.Zone_Name = f.properties.transact_z; 
-                f.properties.Zone_Code = f.properties.transact_z; 
-                f.properties.Zone_FullName = f.properties.zone_name; 
+                f.properties.Zone_Name = f.properties.transact_z || f.properties.name; // Adjust according to your GeoJSON structure
+                f.properties.Zone_Code = f.properties.transact_z || f.properties.code; // Adjust according to your GeoJSON structure
+                f.properties.Zone_FullName = f.properties.zone_name || f.properties.fullName; // Adjust according to your GeoJSON structure
             });
 
             // Generate Label Points
@@ -70,16 +70,17 @@ export function initApp() {
                 }));
             });
 
-            map.addSource('zoneShapes', { type: 'geojson', data: shapes });
+            // Add sources and layers
+            map.addSource('serviceTerritories', { type: 'geojson', data: shapes }); // New source for service territories
             map.addSource('zoneLabelPoints', { type: 'geojson', data: { type: 'FeatureCollection', features: labelFeatures } });
             
             // --- LAYERS ---
 
             // 1. Standard 2D Fill (Default Visible)
             map.addLayer({ 
-                id: 'zoneFill', 
+                id: 'serviceTerritoryFill', 
                 type: 'fill', 
-                source: 'zoneShapes', 
+                source: 'serviceTerritories', 
                 layout: { 'visibility': 'visible' },
                 paint: { 
                     "fill-color": '#cccccc', 
@@ -89,9 +90,9 @@ export function initApp() {
 
             // 2. New 3D Extrusion (Default Hidden)
             map.addLayer({
-                id: 'zoneFill-3d',
+                id: 'serviceTerritoryFill-3d',
                 type: 'fill-extrusion',
-                source: 'zoneShapes',
+                source: 'serviceTerritories',
                 layout: { 'visibility': 'none' },
                 paint: {
                     'fill-extrusion-color': '#cccccc',
@@ -103,9 +104,9 @@ export function initApp() {
             });
             
             map.addLayer({ 
-                id: 'zoneLines', 
+                id: 'serviceTerritoryLines', 
                 type: 'line', 
-                source: 'zoneShapes', 
+                source: 'serviceTerritories', 
                 paint: { 
                     'line-color': '#000', 
                     'line-width': 1.5 
@@ -113,19 +114,32 @@ export function initApp() {
             });
             
             map.addLayer({ 
-                id: 'zoneLines-selected', 
+                id: 'serviceTerritoryLines-selected', 
                 type: 'line', 
-                source: 'zoneShapes', 
+                source: 'serviceTerritories', 
                 paint: { 
                     'line-color': '#000', 
                     'line-width': 5 
                 },
                 filter: ['==', 'Zone_Code', ''] 
             });
-
-            map.addLayer({ id: 'zoneLabels', type: 'symbol', source: 'zoneLabelPoints', 
-                layout: { 'text-field': ['get', 'Label_Text'], 'text-size': 12, 'text-allow-overlap': true, 'text-ignore-placement': true }, 
-                paint: { 'text-color': '#000000', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1 } });
+            
+            map.addLayer({ 
+                id: 'serviceTerritoryLabels', 
+                type: 'symbol', 
+                source: 'zoneLabelPoints', 
+                layout: { 
+                    'text-field': ['get', 'Label_Text'], 
+                    'text-size': 12, 
+                    'text-allow-overlap': true, 
+                    'text-ignore-placement': true 
+                }, 
+                paint: { 
+                    'text-color': '#000000', 
+                    'text-halo-color': '#FFFFFF', 
+                    'text-halo-width': 1 
+                } 
+            });
 
             // Update Zone List
             const zoneListEl = document.getElementById('zone-list');
@@ -162,10 +176,10 @@ export function initApp() {
                                 essential: true 
                             });
                             controller.selectedZoneName = null;
-                            map.setFilter('zoneLines-selected', ['==', 'Zone_Code', '']);
+                            map.setFilter('serviceTerritoryLines-selected', ['==', 'Zone_Code', '']);
                         } 
                         else {
-                            map.setFilter('zoneLines-selected', ['==', 'Zone_Code', zData.name]);
+                            map.setFilter('serviceTerritoryLines-selected', ['==', 'Zone_Code', zData.name]);
 
                             if (e.target.classList.contains('zone-checkbox')) {
                                 map.flyTo({ center: [-82, 40.0 - 9], zoom: 4.3, pitch: map.getPitch(), bearing: map.getBearing() });
@@ -186,13 +200,13 @@ export function initApp() {
             window.zonePlotManager = zonePlotManager;
 
             // Hover Logic
-            ['zoneFill', 'zoneFill-3d'].forEach(layerId => {
+            ['serviceTerritoryFill', 'serviceTerritoryFill-3d'].forEach(layerId => {
                 map.on('mousemove', layerId, (e) => controller.handleMapHover(e));
                 map.on('mouseleave', layerId, () => controller.hoverPopup.remove());
                 map.on('click', layerId, (e) => {
                     const feature = e.features[0];
                     const zoneCode = feature.properties.Zone_Code; 
-                    map.setFilter('zoneLines-selected', ['==', 'Zone_Code', zoneCode]);
+                    map.setFilter('serviceTerritoryLines-selected', ['==', 'Zone_Code', zoneCode]);
                     const zData = zones.find(z => z.name === zoneCode);
                     if (zData) {
                         map.flyTo({ 
@@ -241,8 +255,6 @@ export function initApp() {
         });
     }
 
-    // NOTE: View Mode Selector logic has been moved to AppController
-    
     // Play Button
     const playBtn = document.getElementById('play-btn');
     if (playBtn) {
