@@ -21,7 +21,7 @@ Stretch goals include prioritizing the expansion of this method to other RTO/ISO
 ### Data
 - **PJM Aggregated LMP**: PJM Data Miner 2 API
 - **Utility Standard Offer Rates**: Provided by CEEPR sharing collected data
-- **Service Territory Mapping**: EIA Open Data API, , geospatial mapping to ZIP codes for localized alignment with retail service territories (e.g., via latitude/longitude coordinates from )
+- **Service Territory Mapping**: EIA Open Data API, geospatial mapping to ZIP codes for localized alignment with retail service territories (e.g., via latitude/longitude coordinates)
 
 ### Additional Information
 - **Technologies**: Python (FastAPI), PostgreSQL (Lightsail instance based), React.js, Data Visualization (e.g., Observable/D3.js, Plotly)
