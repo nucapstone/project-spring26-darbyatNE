@@ -1,144 +1,117 @@
 // src/components/ui.js
 
-export const CONGESTION_POPUP_HTML = `
-    <div class="congestion-popup-content">
-        <strong class="congestion-header">Load Congestion View</strong>
-        <div class="congestion-body">
-            The <span class="congestion-highlight">Yellow Bordered Zone</span> is the selected Load Zone.<br>
-            Prices displayed are the cost to "deliver" from each zone to the selected Load Zone.
+/**
+ * Updates the top filter display with Year/Month range and Total Months count.
+ */
+export function displayCurrentFilter(filter, status = null) {
+    const container = document.getElementById('top-filter-display');
+    if (!container) return; 
+
+    // --- 1. Parse Years & Calculate Year Span ---
+    // We use safe parsing to ensure we get numbers
+    const startYearStr = filter.startDate ? filter.startDate.split('-')[0] : new Date().getFullYear().toString();
+    const endYearStr = filter.endDate ? filter.endDate.split('-')[0] : new Date().getFullYear().toString();
+    
+    const sYear = parseInt(startYearStr, 10);
+    const eYear = parseInt(endYearStr, 10);
+    
+    // Calculate span (inclusive). e.g., 2020-2020 = 1 year. 2020-2022 = 3 years.
+    const numberOfYears = (isNaN(sYear) || isNaN(eYear)) ? 0 : (Math.abs(eYear - sYear) + 1);
+
+    const yearDisplay = sYear === eYear ? `${sYear}` : `${sYear} – ${eYear}`;
+
+    // --- 2. Parse Months & Calculate Month Count ---
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let monthsDisplay = "All Months";
+    let activeMonthCount = 12; // Default to 12 (All)
+
+    // Check if specific months are selected
+    if (filter.months && Array.isArray(filter.months)) {
+        const len = filter.months.length;
+        
+        // If 0 (empty) or 12 (full), we consider it "All Months"
+        if (len === 0 || len === 12) {
+            monthsDisplay = "All Months";
+            activeMonthCount = 12;
+        } else {
+            // Sort and map indices (0=Jan) to names
+            const sortedMonths = [...filter.months].sort((a, b) => a - b);
+            monthsDisplay = sortedMonths.map(i => monthNames[i]).join(", ");
+            activeMonthCount = len;
+        }
+    }
+
+    // --- 3. Calculate Total Months ---
+    const totalMonths = numberOfYears * activeMonthCount;
+
+    // --- 4. Handle Status / Count Display ---
+    let countValue = "--"; 
+    let countColor = "#333"; 
+    let labelText = "Total Months";
+
+    if (status === "Loading...") {
+        countValue = "Loading...";
+        countColor = "#666";
+    } else {
+        // Force the calculated total, ignoring any '0' passed from the database/controller
+        countValue = totalMonths.toLocaleString();
+        countColor = totalMonths > 0 ? "#007bff" : "#dc3545";
+    }
+
+    // --- 5. Render HTML ---
+    container.style.display = "flex"; 
+    container.style.justifyContent = "space-between"; 
+    container.style.alignItems = "center";
+    
+    container.innerHTML = `
+        <div style="flex: 1; min-width: 0; padding-right: 10px;">
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px;">
+                <li style="font-size: 14px;">
+                    <span style="color: #666; font-weight: bold; width: 50px; display: inline-block;">Years:</span> 
+                    <span style="font-weight: 600; color: #333;">${yearDisplay}</span>
+                </li>
+                <li style="font-size: 13px; line-height: 1.4;">
+                    <span style="color: #666; font-weight: bold; width: 50px; display: inline-block;">Months:</span> 
+                    <span style="color: #444;">${monthsDisplay}</span>
+                </li>
+            </ul>
         </div>
-    </div>
-`;
-
-export function createZonePopupHTML(zoneName, priceType, value) {
-    const formattedPrice = value !== null ? `$${value.toFixed(2)}` : 'N/A';
-    let label = priceType;
-    if (priceType === 'da') label = 'Day-Ahead';
-    if (priceType === 'rt') label = 'Real-Time';
-    if (priceType === 'net') label = 'NET';
-    if (priceType === 'congestion') label = 'Congestion';
-
-    return `
-        <div class="zone-popup-content">
-            <strong class="zone-popup-header">${zoneName}</strong>
-            <div><span class="zone-popup-label">${label}:</span> <span class="zone-popup-value">${formattedPrice}</span></div>
+        
+        <div style="flex-shrink: 0; border-left: 1px solid #ccc; padding-left: 15px; margin-left: 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; min-width: 80px;">
+            <span style="font-size: 10px; color: #666; text-transform: uppercase; font-weight: bold; line-height: 1; margin-bottom: 4px;">${labelText}</span>
+            <span style="font-size: 20px; font-weight: bold; color: ${countColor}; line-height: 1;">${countValue}</span>
         </div>
     `;
 }
 
-export function renderConstraintList(listItems, labelType) {
-    const container = document.getElementById('constraint-list');
-    if (!container) return;
-    container.innerHTML = '';
-    if (!listItems || listItems.length === 0) { container.innerHTML = '<div class="empty-state">No active constraints</div>'; return; }
-    container.innerHTML = listItems.map(item => `
-        <div class="constraint-row">
-            <div style="flex: 1; padding-right: 10px;"><div class="c-name">${item.name}</div></div>
-            <div style="text-align: right;"><div class="c-price">$${item.price.toFixed(2)}</div><div style="font-size: 9px; color: #000;">${labelType}</div></div>
-        </div>`).join('');
-}
+/**
+ * Renders a static legend for the map colors.
+ */
+export function buildLegend() {
+    const legendContainer = document.getElementById('map-legend');
+    if (!legendContainer) return;
 
-export function setConstraintModeUI(mode) {
-    const radio = document.querySelector(`input[name="c-mode"][value="${mode}"]`);
-    if (radio) radio.checked = true;
-}
-
-export function displayCurrentFilter(filter, resultCount = null) {
-    const container = document.getElementById('top-filter-display');
-    if (!container || !filter.startDate) return;
-
-    const formatDate = (d) => {
-        if (typeof d === 'string' && d.includes('-')) {
-            const [y, m, day] = d.split('-');
-            return `${parseInt(m)}/${parseInt(day)}/${y}`;
-        }
-        const date = new Date(d);
-        return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-    };
-
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const dayFlags = filter.daysOfWeek || Array(7).fill(true);
-    const selectedDaysList = dayFlags.map((isSelected, i) => isSelected ? days[i] : null).filter(d => d);
-    let dayString = selectedDaysList.length === 7 ? "All Days" : (selectedDaysList.length === 0 ? "None" : selectedDaysList.join(', '));
-    const constraintHtml = filter.selectedConstraint ? `<li><strong>Constraint:</strong> ${filter.selectedConstraint}</li>` : '';
-
-    let hoursValue = 0, hoursColor = "#333", labelText = "Total Hours";
-    if (resultCount === 0) { hoursValue = "0"; hoursColor = "#dc3545"; } 
-    else if (typeof resultCount === 'number') { hoursValue = resultCount; hoursColor = "#007bff"; } 
-    else {
-        let estimated = 0;
-        const parseLocal = (s) => {
-            if (typeof s === 'string') { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
-            return new Date(s);
-        };
-        const start = parseLocal(filter.startDate);
-        const end = parseLocal(filter.endDate);
-        let dailyHours = (parseInt(filter.endTime) || 24) - (parseInt(filter.startTime) || 0);
-        let current = new Date(start);
-        while (current <= end) {
-            if (dayFlags[current.getDay()]) estimated += dailyHours;
-            current.setDate(current.getDate() + 1);
-        }
-        hoursValue = estimated; labelText = "Est. Hours"; 
-    }
-
-    container.style.display = "flex"; container.style.justifyContent = "space-between"; container.style.alignItems = "center";
-    container.innerHTML = `
-        <div style="flex: 1; min-width: 0; padding-right: 10px;">
-            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 20px;">
-                <li><strong>Dates:</strong> ${formatDate(filter.startDate)} - ${formatDate(filter.endDate)}</li>
-                <li><strong>Days:</strong> ${dayString}</li>
-                <li><strong>Time:</strong> ${filter.startTime}:00 - ${filter.endTime}:00</li>
-                ${constraintHtml}
-            </ul>
+    legendContainer.innerHTML = `
+        <div style="background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-family: sans-serif; font-size: 12px;">
+            <div style="font-weight: bold; margin-bottom: 5px; text-align: center;">LMP Price ($/MWh)</div>
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <span style="margin-right: 8px; font-weight: 500;">Low</span>
+                <div style="
+                    width: 120px; 
+                    height: 12px; 
+                    background: linear-gradient(90deg, #4575b4 0%, #ffffbf 50%, #d73027 100%); 
+                    border: 1px solid #ccc;
+                    border-radius: 2px;
+                "></div>
+                <span style="margin-left: 8px; font-weight: 500;">High</span>
+            </div>
         </div>
-        <div style="flex-shrink: 0; border-left: 1px solid #ccc; padding-left: 15px; margin-left: 5px; text-align: center; display: flex; flex-direction: column; justify-content: center; min-width: 70px;">
-            <span style="font-size: 10px; color: #666; text-transform: uppercase; font-weight: bold; line-height: 1; margin-bottom: 2px;">${labelText}</span>
-            <span style="font-size: 22px; font-weight: bold; color: ${hoursColor}; line-height: 1;">${hoursValue}</span>
-        </div>`;
+    `;
 }
 
-export function buildLegend(currentScale) {
-    const container = document.getElementById('legend');
-    if (!container) return;
-    let html = '<strong>LMP ($/MWh)</strong>';
-    currentScale.forEach((item, index) => {
-        const prev = index > 0 ? currentScale[index - 1].threshold : null;
-        let label = index === 0 ? `≥ $${item.threshold}` : `$${item.threshold} – $${prev}`;
-        if (item.threshold === -Infinity) label = `< $${prev}`;
-        html += `<div class="legend-item"><span class="legend-color" style="background-color: ${item.color};"></span><span>${label}</span></div>`;
-    });
-    container.innerHTML = html;
-}
-
+/**
+ * Initializes Info Modals (About, Help, etc.)
+ */
 export function initInfoModals() {
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(event) {
-        const menu = document.getElementById('header-help-menu');
-        const btn = event.target.closest('.header-btn');
-        if (menu && menu.style.display === 'block' && !btn && !menu.contains(event.target)) {
-            menu.style.display = 'none';
-        }
-    });
-
-    // Bind Modal Buttons
-    const btnGuide = document.getElementById('btn-guide');
-    const btnSetup = document.getElementById('btn-setup');
-    const menu = document.getElementById('header-help-menu');
-
-    if (btnGuide) {
-        btnGuide.onclick = (e) => {
-            e.preventDefault();
-            if(menu) menu.style.display = 'none';
-            document.getElementById('guide-modal').showModal();
-        };
-    }
-
-    if (btnSetup) {
-        btnSetup.onclick = (e) => {
-            e.preventDefault();
-            if(menu) menu.style.display = 'none';
-            document.getElementById('setup-modal').showModal();
-        };
-    }
+    console.log("Info modals initialized");
 }

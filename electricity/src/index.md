@@ -1,5 +1,5 @@
 ---
-title: PJM Market Map
+title: PJM Wholesale/Retail Market Map
 theme: dashboard
 toc: false
 sidebar: false
@@ -16,11 +16,11 @@ pager: false
 <!-- 1. Header With Ribbon for Help Docs & View Control -->
 <div id="page-header">
   <div class="header-left"></div>
-  <h1>Interactive PJM LMP Map</h1>
+  <h1>Retail Electricity Service Territories Map</h1>
   
   <div class="header-right" style="display: flex; align-items: center; gap: 15px;">    
-    <!-- View Mode Selector -->
-    <div class="control-group" style="display: flex; align-items: center; gap: 5px;">
+    <!-- View Mode Selector (HIDDEN) -->
+    <div class="control-group" style="display: none; align-items: center; gap: 5px;">
         <label for="view-mode-selector" style="color: white; font-size: 12px; font-weight: bold;">View:</label>
         <select id="view-mode-selector" class="header-select-box" style="padding: 4px; border-radius: 4px; border: none;">
             <option value="2d">Flat Map (2D)</option>
@@ -28,8 +28,8 @@ pager: false
             <option value="contour">Heatmap (Contour)</option>
         </select>
     </div>
-    <!-- Getting Started Menu -->
-    <div style="position: relative;">
+    <!-- Getting Started Menu (HIDDEN) -->
+    <div style="display: none; position: relative;">
       <button onclick="const m = document.getElementById('header-help-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block';" 
               class="header-btn">
           🚀 Getting Started <span style="font-size: 10px;">▼</span>
@@ -48,15 +48,16 @@ pager: false
 <div class="top-controls-wrapper">
   <div class="price-selector">
     <span class="price-label">Price Type &rarr;</span>
-    <input type="radio" id="price-da" name="price-type" value="da" checked><label for="price-da">Day-Ahead</label>
-    <input type="radio" id="price-rt" name="price-type" value="rt"><label for="price-rt">Real-Time</label>
-    <input type="radio" id="price-net" name="price-type" value="net"><label for="price-net">NET</label>
-    <input type="radio" id="price-cong" name="price-type" value="congestion"><label for="price-cong">Congestion</label>
+    <input type="radio" id="price-wholesale" name="price-type" value="wholesale" checked>
+    <label for="price-wholesale">Wholesale</label>
+    <input type="radio" id="price-retail" name="price-type" value="retail">
+    <label for="price-retail">Retail</label>
   </div>
 
   <!-- Filter Trigger -->
   <div class="filter-container" id="filter-trigger" style="cursor: pointer; margin-left: auto;" title="Click to configure filters">
-    <span class="filter-label">⚙️ Filters &rarr;</span><div id="top-filter-display"></div>
+    <span class="filter-label">⚙️ Selected Months &rarr;</span>
+    <div id="top-filter-display"></div>
   </div>
 </div>
 
@@ -72,7 +73,7 @@ pager: false
         <label>Speed</label>
         <input type="range" id="speed-slider" min="100" max="3000" step="100" value="1000">
       </div>
-      <button id="play-btn">Animate Hours</button>
+      <button id="play-btn">Animate Months</button>
       <input type="range" id="slider" min="0" max="1" value="0" style="flex-grow: 1; margin: 0 10px;">
       <div id="time-display">Ready</div>
     </div>
@@ -199,4 +200,3 @@ document.addEventListener('click', function(event) {
     menu.style.display = 'none';
   }
 });
-```
