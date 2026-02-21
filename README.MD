@@ -6,10 +6,10 @@
 
 The Electricity Retail/Wholesale Comparison Tool is designed to enable users to visualize and compare wholesale electricity prices (LMPs) with retail utility rates. By automating the comparison process, users can easily identify trends, price spreads, and regional variations, ultimately facilitating informed decision-making in energy trading. This tool bridges the gap between volatile wholesale electricity prices and fixed retail rates by automating the comparison of aggregated LMPs against utility standard offer rates, enhancing transparency and understanding of market dynamics.
 
-# Example of a PJM ISO Retail Electricity Service Provider's Territory - The Delmarva Company 
+# PJM ISO Retail Electricity Service Provider Territies 
 
 <div align="center">
-  <img src="docs/Delmarva Service Territory.png" alt="Dlemarva Retail Service Territory" width="600">
+  <img src="docs/retail service territories.png" alt="Retail Service Territories" width="600">
   <p><em>This map visualizes the physical territory where Delmarva provides retail electricity</em></p>
 </div>
 
