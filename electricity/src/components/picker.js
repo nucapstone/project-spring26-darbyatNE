@@ -32,8 +32,6 @@ export function dateTimeRangePicker(options = {}) {
       selectedMonths.fill(true);
   }
 
-  let savedFilters = [];
-
   const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   // --- UI Construction ---
@@ -44,7 +42,7 @@ export function dateTimeRangePicker(options = {}) {
     .style("padding", "20px")
     .style("margin-bottom", "20px");
 
-  // 1. Month Selector Section (Replaces Days of Week)
+  // 1. Month Selector Section
   const monthSection = controlFrame.append("div").style("margin-bottom", "25px");
   monthSection.append("label")
     .style("font-weight", "bold")
@@ -55,32 +53,38 @@ export function dateTimeRangePicker(options = {}) {
 
   const monthsContainer = monthSection.append("div")
     .style("display", "grid")
-    .style("grid-template-columns", "repeat(6, 1fr)") // 2 rows of 6
+    .style("grid-template-columns", "repeat(6, 1fr)") 
     .style("gap", "8px");
 
-  const monthButtons = monthLabels.map((label, i) => {
-    return monthsContainer.append("button")
-      .style("padding", "8px 0")
-      .style("border", "1px solid #007bff")
-      .style("border-radius", "4px")
-      .style("background-color", selectedMonths[i] ? "#007bff" : "white")
-      .style("color", selectedMonths[i] ? "white" : "#007bff")
-      .style("cursor", "pointer")
-      .style("font-size", "12px")
-      .style("font-weight", "500")
-      .style("transition", "all 0.2s")
-      .text(label)
-      .on("click", function() {
-        selectedMonths[i] = !selectedMonths[i];
-        const isActive = selectedMonths[i];
-        d3.select(this)
-          .style("background-color", isActive ? "#007bff" : "white")
-          .style("color", isActive ? "white" : "#007bff");
-        updateDisplay();
-      });
+  monthButtons = monthLabels.map((label, i) => {
+      return monthsContainer.append("button")
+          .style("padding", "8px 0")
+          .style("border", "1px solid #007bff")
+          .style("border-radius", "4px")
+          .style("background-color", selectedMonths[i] ? "#007bff" : "white")
+          .style("color", selectedMonths[i] ? "white" : "#007bff")
+          .style("cursor", "pointer")
+          .style("font-size", "12px")
+          .style("font-weight", "500")
+          .style("transition", "all 0.2s")
+          .text(label)
+          .on("click", function() {
+              selectedMonths[i] = !selectedMonths[i];
+              const isActive = selectedMonths[i];
+              d3.select(this)
+                  .style("background-color", isActive ? "#007bff" : "white")
+                  .style("color", isActive ? "white" : "#007bff");
+              
+              // Dispatch an event to notify changes
+              const event = new CustomEvent('monthsChanged', {
+                  detail: selectedMonths.map((selected, index) => selected ? index : -1).filter(index => index !== -1) // Pass active month indices
+              });
+              container.node().dispatchEvent(event);
+          });
   });
 
-  // 2. Year Slider Section (Replaces Hourly Slider)
+
+  // 2. Year Slider Section
   const yearSection = controlFrame.append("div").style("margin-bottom", "15px");
   const yearHeaderBox = yearSection.append("div")
     .style("display", "flex")
@@ -189,6 +193,10 @@ export function dateTimeRangePicker(options = {}) {
       .attr("width", x2 - x1);
   }
 
+    function updateDisplay() {
+    yearDisplay.text(`${startYear} - ${endYear}`);
+  }
+  
   // 3. Action Buttons
   const actionContainer = controlFrame.append("div")
     .style("display", "flex")
@@ -197,17 +205,6 @@ export function dateTimeRangePicker(options = {}) {
     .style("margin-top", "20px")
     .style("padding-top", "15px")
     .style("border-top", "1px solid #eee");
-
-  actionContainer.append("button")
-    .style("padding", "8px 16px")
-    .style("background-color", "white")
-    .style("color", "#333")
-    .style("border", "1px solid #ccc")
-    .style("border-radius", "4px")
-    .style("font-size", "13px")
-    .style("cursor", "pointer")
-    .text("Save Filter")
-    .on("click", saveFilter);
 
   actionContainer.append("button")
     .style("padding", "8px 20px")
@@ -219,139 +216,36 @@ export function dateTimeRangePicker(options = {}) {
     .style("font-size", "13px")
     .style("cursor", "pointer")
     .text("Apply & Load Data")
-    .on("click", function() {
-      container.node().dispatchEvent(new CustomEvent('apply', { detail: getCurrentFilter(), bubbles: true }));
-    });
-
-  // 4. Saved Filters Section
-  const savedSection = container.append("div")
-    .style("margin-top", "15px")
-    .style("border-top", "1px solid #eee")
-    .style("padding-top", "15px");
-    
-  savedSection.append("h4")
-    .style("margin", "0 0 10px 0")
-    .style("font-size", "13px")
-    .style("color", "#666")
-    .text("Saved Filters");
-    
-  const savedList = savedSection.append("div")
-    .style("display", "flex")
-    .style("flex-direction", "column")
-    .style("gap", "8px");
-
-  // --- Helpers ---
-
-  function getCurrentFilter() {
-    // Return indices of selected months
-    const activeMonthIndices = selectedMonths
+    .on("click", async function() {
+      const activeMonthIndices = selectedMonths
         .map((isSelected, index) => isSelected ? index : -1)
         .filter(index => index !== -1);
 
-    return {
-      startYear,
-      endYear,
-      months: activeMonthIndices,
-      // Metadata for UI restoration
-      _fullMonthState: [...selectedMonths] 
-    };
-  }
+      const response = await fetch("/api/utility_data/range", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          startYear: startYear,
+          endYear: endYear,
+          months: activeMonthIndices // Pass the selected months
+        })
+      });
 
-  function updateDisplay() {
-    yearDisplay.text(`${startYear} — ${endYear}`);
-    // Dispatch event for live updates if needed
-    container.node().dispatchEvent(new CustomEvent('filterchange', { detail: getCurrentFilter(), bubbles: true }));
-  }
-
-  function saveFilter() {
-    const filter = getCurrentFilter();
-    filter.id = Date.now();
-    savedFilters.push(filter);
-    updateSavedList();
-  }
-
-  function updateSavedList() {
-    savedList.selectAll("*").remove();
-    
-    if (savedFilters.length === 0) {
-      savedList.append("div")
-        .style("color", "#999")
-        .style("font-size", "12px")
-        .style("font-style", "italic")
-        .text("No saved filters");
-      return;
-    }
-
-    savedFilters.forEach((filter) => {
-      const row = savedList.append("div")
-        .style("display", "flex")
-        .style("justify-content", "space-between")
-        .style("align-items", "center")
-        .style("padding", "10px")
-        .style("background", "#f8f9fa")
-        .style("border-radius", "4px")
-        .style("font-size", "12px");
-
-      const monthCount = filter.months.length;
-      const monthText = monthCount === 12 ? "All Months" : `${monthCount} Months`;
-
-      row.append("span")
-        .html(`<b>${filter.startYear}-${filter.endYear}</b> <span style="color:#666; margin-left:5px">(${monthText})</span>`);
-
-      const btns = row.append("div").style("display", "flex").style("gap", "5px");
-      
-      btns.append("button")
-        .text("Load")
-        .style("border", "1px solid #ccc")
-        .style("background", "white")
-        .style("cursor", "pointer")
-        .style("border-radius", "3px")
-        .on("click", () => loadFilter(filter));
-        
-      btns.append("button")
-        .text("×")
-        .style("border", "none")
-        .style("color", "#dc3545")
-        .style("background", "none")
-        .style("cursor", "pointer")
-        .style("font-weight", "bold")
-        .style("font-size", "14px")
-        .on("click", () => {
-          savedFilters = savedFilters.filter(f => f.id !== filter.id);
-          updateSavedList();
-        });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Data loaded successfully:", data);
+        // Handle the loaded data (e.g., update the UI or state)
+      } else {
+        console.error("Error loading data:", response.statusText);
+        // Handle the error (e.g., show a notification)
+      }
     });
-  }
-
-  function loadFilter(filter) {
-    startYear = filter.startYear;
-    endYear = filter.endYear;
-    
-    // Restore month selection
-    if (filter._fullMonthState) {
-        selectedMonths = [...filter._fullMonthState];
-    } else {
-        // Fallback if loading from simple index array
-        selectedMonths.fill(false);
-        filter.months.forEach(idx => selectedMonths[idx] = true);
-    }
-
-    // Update UI Elements
-    monthButtons.forEach((btn, i) => {
-      const isActive = selectedMonths[i];
-      d3.select(btn)
-        .style("background-color", isActive ? "#007bff" : "white")
-        .style("color", isActive ? "white" : "#007bff");
-    });
-
-    updateSliderVisuals();
-    updateDisplay();
-  }
 
   // Initialize
   updateSliderVisuals();
   updateDisplay();
-  updateSavedList();
 
   return container.node();
 }

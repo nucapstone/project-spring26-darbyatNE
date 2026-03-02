@@ -49,14 +49,11 @@ export function initApp() {
 
             // Map the Database columns to the App's expected properties
             shapes.features.forEach(f => {
-
                 const dbName = f.properties.name || "Unknown";
-
                 f.properties.Zone_Name = dbName; 
                 f.properties.Zone_Code = dbName; // Used for coloring and matching
                 f.properties.Zone_FullName = dbName; 
             });
-            // --- CORRECTION END ---
 
             // --- COLOR GENERATION LOGIC ---
             // 1. Get list of unique zone names
@@ -75,7 +72,6 @@ export function initApp() {
             // Generate Label Points
             const labelFeatures = shapes.features.flatMap(f => {
                 const zDisplay = f.properties.Zone_Code; 
-
                 const coords = ZONE_LABEL_OVERRIDES[zDisplay] 
                     ? ZONE_LABEL_OVERRIDES[zDisplay].map(c => [c[1], c[0]]) 
                     : [d3.geoCentroid(f)];
@@ -92,7 +88,6 @@ export function initApp() {
             map.addSource('zoneLabelPoints', { type: 'geojson', data: { type: 'FeatureCollection', features: labelFeatures } });
             
             // --- LAYERS ---
-
             // 1. Standard 2D Fill
             map.addLayer({ 
                 id: 'serviceTerritoryFill', 
@@ -157,7 +152,7 @@ export function initApp() {
                     'text-halo-width': 1 
                 } 
             });
-
+            
             // --- GENERATE LEGEND ---
             const legendEl = document.getElementById('legend');
             if (legendEl) {
@@ -180,7 +175,7 @@ export function initApp() {
                     </div>
                 `;
             }
-
+            
             // Update Zone List (Sidebar)
             const zoneListEl = document.getElementById('zone-list');
             const zones = [
@@ -215,14 +210,9 @@ export function initApp() {
                             });
                             controller.selectedZoneName = null;
                             map.setFilter('serviceTerritoryLines-selected', ['==', 'Zone_Code', '']);
-                        } 
-                        else {
+                        } else {
                             map.setFilter('serviceTerritoryLines-selected', ['==', 'Zone_Code', zData.name]);
-                            if (e.target.classList.contains('zone-checkbox')) {
-                                map.flyTo({ center: [-85, 40.0 - 9], zoom: 4.3, pitch: map.getPitch(), bearing: map.getBearing() });
-                            } else {
-                                map.flyTo({ center: zData.center, zoom: 6, pitch: map.getPitch(), bearing: map.getBearing() });
-                            }
+                            map.flyTo({ center: zData.center, zoom: 6, pitch: map.getPitch(), bearing: map.getBearing() });
                             controller.selectedZoneName = zData.name;
                         }
                         controller.updateZoneBorders();
@@ -271,7 +261,6 @@ export function initApp() {
 
         } catch (e) { console.error("Map Load Error", e); }
     });
-
 
     // 4. Bind DOM Controls
     const priceSelector = document.querySelector('.price-selector');
@@ -325,19 +314,7 @@ export function initApp() {
     if (filterBtn && modal && mountPoint) {
         filterBtn.onclick = async () => {
             mountPoint.innerHTML = ''; 
-            const activeConstraints = controller.constraintsData ? [...new Set(controller.constraintsData.map(c => c.monitored_facility || c.name))] : [];
-            let allConstraints = [];
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/constraints/list`, { headers: { "ngrok-skip-browser-warning": "true" } });
-                if (response.ok) {
-                    const data = await response.json();
-                    allConstraints = data.constraints || [];
-                } else {
-                    allConstraints = activeConstraints;
-                }
-            } catch (error) {
-                allConstraints = activeConstraints;
-            }
+
 
             const picker = dateTimeRangePicker({
                 width: 520, 
@@ -346,9 +323,6 @@ export function initApp() {
                 initialStartDate: filter.startDate,
                 initialEndDate: filter.endDate,
                 initialDaysOfWeek: filter.daysOfWeek,
-                initialConstraint: filter.selectedConstraint,
-                activeConstraints: activeConstraints,
-                allConstraints: allConstraints
             });
 
             picker.addEventListener('apply', (e) => {

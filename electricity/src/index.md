@@ -8,6 +8,21 @@ pager: false
 
 <script>
   try { localStorage.setItem("observablehq:sidebar", "false"); } catch (e) {}
+
+  // 1. Add a click event listener to the filter trigger
+  const filterTrigger = document.getElementById('filter-trigger');
+  if (filterTrigger) {
+      filterTrigger.addEventListener('click', (e) => {
+          console.log("Selected months filter box clicked");
+          console.log("Current filter state:", filter);
+          const filterModal = document.getElementById('filter-modal');
+          if (filterModal) {
+              filterModal.showModal(); // Show the filter modal
+          } else {
+              console.error("Filter modal not found!");
+          }
+      });
+  }
 </script>
 
 <link rel="stylesheet" href="./styles/main.css">
@@ -46,19 +61,18 @@ pager: false
 
 <!-- Top Controls (Price Type & Filter) -->
 <div class="top-controls-wrapper">
-  <div class="price-selector">
-    <span class="price-label">Price Type &rarr;</span>
-    <input type="radio" id="price-wholesale" name="price-type" value="wholesale" checked>
-    <label for="price-wholesale">Wholesale</label>
-    <input type="radio" id="price-retail" name="price-type" value="retail">
-    <label for="price-retail">Retail</label>
-  </div>
-
-  <!-- Filter Trigger -->
-  <div class="filter-container" id="filter-trigger" style="cursor: pointer; margin-left: auto;" title="Click to configure filters">
-    <span class="filter-label">⚙️ Selected Months &rarr;</span>
-    <div id="top-filter-display"></div>
-  </div>
+    <div class="price-selector">
+        <span class="price-label">Price Type &rarr;</span>
+        <input type="radio" id="price-retail" name="price-type" value="retail" checked>
+        <label for="price-retail">Retail</label>
+        <input type="radio" id="price-wholesale" name="price-type" value="wholesale">
+        <label for="price-wholesale">Wholesale</label>
+    </div>
+    <!-- Filter Trigger -->
+    <div class="filter-container" id="filter-trigger" style="cursor: pointer; margin-left: auto;" title="Click to configure filters">
+        <span class="filter-label">⚙️ Selected Months &rarr;</span>
+        <div id="top-filter-display">{{ selectedMonths.join(', ') }}</div>
+    </div>
 </div>
 
 <!-- Main Container -->
@@ -82,20 +96,8 @@ pager: false
   <!-- Sidebar -->
   <div id="sidebar">
     <div id="zone-section">
-      <h4>PJM Zones</h4>
+      <h4>Retail Territories</h4>
       <div id="zone-list"></div>
-    </div>
-    <div id="constraint-section">
-      <div class="constraint-header-wrapper">
-        <h4>Active Constraints</h4>
-          <div class="c-toggle-container">
-              <label><input type="radio" name="c-mode" value="global" checked disabled> Period Avg</label>
-              <label><input type="radio" name="c-mode" value="current" disabled> Current Hour</label>
-          </div>
-      </div>
-      <div id="constraint-list">
-        <div class="empty-state">No active constraints</div>
-      </div>
     </div>
   </div>
 </div>
@@ -149,7 +151,6 @@ pager: false
 <!-- 3. INITIALIZATION & CONTENT LOADING -->
 ```js
 import { marked } from "npm:marked"; 
-
 import { initApp } from "./components/map.js";
 import { initInfoModals } from "./components/ui.js";
 

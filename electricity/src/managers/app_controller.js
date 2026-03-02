@@ -17,7 +17,7 @@ export class MapController {
         
         // Filter State
         this.currentFilter = {};
-        this.activePriceType = 'da'; 
+        this.activePriceType = 'rt'; 
         this.selectedZoneName = 'PJM'; 
     }
 
@@ -64,43 +64,7 @@ export class MapController {
         // Update UI to show "ready" state (but with no data)
         displayCurrentFilter(filter, null);
         
-        return; // <--- Exits here, skipping the fetch below
-
-        /* 
-        // --- ORIGINAL LOGIC (Commented out) ---
-        try {
-            const endpoint = this.activePriceType === 'rt' ? 'rt' : 'da'; 
-            
-            const params = new URLSearchParams({
-                start_date: filter.startDate,
-                end_date: filter.endDate,
-                start_hour: filter.startTime || "0",
-                end_hour: filter.endTime || "24"
-            });
-
-            const url = `${API_BASE_URL}/api/lmp/${endpoint}?${params.toString()}`;
-            
-            const response = await fetch(url);
-            if (!response.ok) {
-                // Log the URL to help debug 404/500 errors
-                console.error(`API Error (${response.status}) at: ${url}`);
-                throw new Error("Network response was not ok");
-            }
-            
-            const data = await response.json();
-            
-            this.zoneData = data.zone_data || [];
-            this.calculateZonePrices();
-            this.renderData();
-            
-            // Pass null to indicate "use calculated total months"
-            displayCurrentFilter(filter, null);
-
-        } catch (error) {
-            console.error("Error loading data:", error);
-            displayCurrentFilter(filter, 0);
-        }
-        */
+        return;   
     }
 
     calculateZonePrices() {
@@ -248,28 +212,35 @@ export class MapController {
         }
     }
 
-    setPriceMode(mode) {
-        this.activePriceType = mode;
-        
-        if (mode === 'congestion' && !this.selectedZoneName) {
-            this.selectedZoneName = 'PJM';
-        }
-
-        if (mode === 'congestion' || mode === 'net') {
-            this.calculateZonePrices();
-            this.renderData();
-        } else {
-            this.loadData(this.currentFilter);
+    handleMapHover(event) {
+        const feature = event.features[0];
+        if (feature) {
+            console.log(`Hovered over: ${feature.properties.Zone_Code}`);
         }
     }
+
+    // setPriceMode(mode) {
+    //     this.activePriceType = mode;
+        
+    //     if (mode === 'congestion' && !this.selectedZoneName) {
+    //         this.selectedZoneName = 'PJM';
+    //     }
+
+    //     if (mode === 'congestion' || mode === 'net') {
+    //         this.calculateZonePrices();
+    //         this.renderData();
+    //     } else {
+    //         this.loadData(this.currentFilter);
+    //     }
+    // }
 
     createZonePopupHTML(zoneName, priceType, value) {
         const formattedPrice = value !== null ? `$${value.toFixed(2)}` : 'N/A';
         let label = priceType;
-        if (priceType === 'da') label = 'Day-Ahead';
         if (priceType === 'rt') label = 'Real-Time';
-        if (priceType === 'net') label = 'NET';
-        if (priceType === 'congestion') label = 'Congestion';
+        if (priceType === 'ws') label = 'Wholesale';
+        if (priceType === 'net') label = 'Net Price';
+
     
         return `
             <div class="zone-popup-content" style="font-family: sans-serif; padding: 5px;">

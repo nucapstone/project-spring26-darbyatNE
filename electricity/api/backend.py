@@ -1,20 +1,17 @@
 import os
 import json
+import csv
+import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
-import collections
 from pydantic import BaseModel
 from typing import Optional, List
-import csv
-from sqlalchemy import func 
+import ast
 
-import logging
-
-# Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 load_dotenv()
@@ -59,6 +56,11 @@ class LmpRangeQuery(BaseModel):
     end_hour: Optional[int] = None
     monitored_facility: Optional[str] = None
 
+class UtilityDataRequest(BaseModel):
+    startYear: int
+    endYear: int
+    months: List[int]
+
 # --- API Endpoints ---
 
 @app.get("/api/service-terr")
@@ -77,10 +79,12 @@ def get_service_territories(db: Session = Depends(get_db)):
                 reader = csv.DictReader(f)
                 for row in reader:
                     territory_name = row.get("TERRITORIES_TO_MAP")
-                    if territory_name and territory_name.strip():
-                        cleaned_name = territory_name.strip()  # Keep original case
+                    iso_rto_value = row.get("ISO/RTO")
+                    
+                    if iso_rto_value == "PJM" and territory_name and territory_name.strip():
+                        cleaned_name = territory_name.strip()
                         target_names.append(cleaned_name)
-                        logging.info(f"Extracted territory name: {cleaned_name}")  # Debugging log
+                        logging.info(f"Extracted territory name: {cleaned_name}")
         else:
             logging.warning(f"CSV not found at {csv_path}")
             return {"type": "FeatureCollection", "features": []}
@@ -91,14 +95,13 @@ def get_service_territories(db: Session = Depends(get_db)):
             logging.info("No valid target names found in the CSV.")
             return {"type": "FeatureCollection", "features": []}
 
-        # Update SQL query to use exact case matching
         query = text("""
             SELECT 
                 name, 
                 id,
                 ST_AsGeoJSON(wkb_geometry) as geometry_geojson
             FROM service_territories
-            WHERE name = ANY(:names)  -- Use exact case matching
+            WHERE name = ANY(:names)
         """)
         
         logging.info(f"Executing SQL query with target names: {target_names}")
@@ -162,7 +165,6 @@ def get_zones(db: Session = Depends(get_db)):
         
     except Exception as e:
         print(f"Server Error in get_zones: {e}")
-        # Return empty to avoid crashing frontend
         return {"type": "FeatureCollection", "features": []}
 
 @app.post("/api/lmp/range")
@@ -195,55 +197,16 @@ def get_lmp_data_for_range(query: LmpRangeQuery, db: Session = Depends(get_db)):
                 AND EXTRACT(HOUR FROM da.datetime_beginning_ept) < :end_hour
         """
 
-        # Constraints Query (Unchanged, assuming schema is correct)
-        constraints_query_str = """
-            SELECT
-                TO_CHAR(datetime_beginning_ept, 'YYYY-MM-DD HH24:00:00') AS hour_beginning,
-                monitored_facility,
-                ROUND(SUM(shadow_price) / 12, 2) AS shadow_price
-            FROM
-                public.pjm_binding_constraints
-            WHERE
-                datetime_beginning_ept >= :start_dt AND datetime_beginning_ept < :end_dt
-                AND EXTRACT(HOUR FROM datetime_beginning_ept) >= :start_hour
-                AND EXTRACT(HOUR FROM datetime_beginning_ept) < :end_hour
-        """
-
         # Day of Week Filter
         if query.days_of_week:
             dow_clause_da = " AND (EXTRACT(DOW FROM da.datetime_beginning_ept) + 1) IN :days_of_week"
-            dow_clause_con = " AND (EXTRACT(DOW FROM datetime_beginning_ept) + 1) IN :days_of_week"
-            
             lmp_query_str += dow_clause_da
-            constraints_query_str += dow_clause_con
-            
             params["days_of_week"] = tuple(query.days_of_week)
 
-        # Selected Constraint Filter
-        if query.monitored_facility:
-            subquery = """
-                SELECT DISTINCT TO_CHAR(datetime_beginning_ept, 'YYYY-MM-DD HH24:00:00')
-                FROM public.pjm_binding_constraints
-                WHERE monitored_facility = :monitored_facility
-            """
-            # Note: Subquery filtering might be slow on large datasets, but keeping logic for now
-            lmp_query_str += f" AND TO_CHAR(da.datetime_beginning_ept, 'YYYY-MM-DD HH24:00:00') IN ({subquery})"
-            constraints_query_str += f" AND TO_CHAR(datetime_beginning_ept, 'YYYY-MM-DD HH24:00:00') IN ({subquery})"
-            params["monitored_facility"] = query.monitored_facility
-            
         # Final Group By and Order
         lmp_query_str += ' GROUP BY ll.transact_z, da.datetime_beginning_ept ORDER BY ll.transact_z, da.datetime_beginning_ept;'
-        constraints_query_str += " GROUP BY hour_beginning, monitored_facility ORDER BY hour_beginning, monitored_facility;"
         
         lmp_result = db.execute(text(lmp_query_str), params)
-        
-        # Try/Except for constraints in case that table is missing
-        try:
-            constraints_result = db.execute(text(constraints_query_str), params)
-            constraint_rows = constraints_result.fetchall()
-        except Exception as e:
-            print(f"Warning: Constraints table issue: {e}")
-            constraint_rows = []
 
         # LMP Data Processing
         lmp_data_by_zone = collections.defaultdict(list)
@@ -261,19 +224,8 @@ def get_lmp_data_for_range(query: LmpRangeQuery, db: Session = Depends(get_db)):
                     }
                 })
 
-        # Constraints Data Processing
-        constraints_data = []
-        for row in constraint_rows:
-            row_dict = row._asdict()
-            constraints_data.append({
-                "name": row_dict['monitored_facility'],
-                "timestamp": str(row_dict['hour_beginning']), 
-                "shadow_price": float(row_dict['shadow_price']) if row_dict['shadow_price'] else 0.0
-            })
-
         return {
             "zones": lmp_data_by_zone,
-            "constraints": constraints_data
         }
 
     except ValueError:
@@ -282,6 +234,8 @@ def get_lmp_data_for_range(query: LmpRangeQuery, db: Session = Depends(get_db)):
         print(f"Server Error in get_lmp_data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+db: Session = Depends(get_db)
+
 @app.get("/api/nodes")
 async def get_pjm_nodes():
     """
@@ -289,49 +243,99 @@ async def get_pjm_nodes():
     Used for mapping individual LMPs to physical coordinates.
     """
     try:
-        # Assuming you are using a similar DB connection pattern as your other endpoints
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                query = """
-                    SELECT pnode_id, alt_name, latitude, longitude 
-                    FROM pjm_lat_long 
-                    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-                """
-                cur.execute(query)
-                rows = cur.fetchall()
-                
-                # Convert to list of dicts
-                nodes = [
-                    {
-                        "pnode_id": row[0],
-                        "name": row[1],
-                        "lat": float(row[2]),
-                        "lon": float(row[3])
-                    } 
-                    for row in rows
-                ]
-                
-                return {"nodes": nodes, "count": len(nodes)}
-                
+        with get_db() as db:
+            query = """
+                SELECT pnode_id, alt_name, latitude, longitude 
+                FROM pjm_lat_long 
+                WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+            """
+            result = db.execute(query)
+            rows = result.fetchall()
+            
+            # Convert to list of dicts
+            nodes = [
+                {
+                    "pnode_id": row[0],
+                    "name": row[1],
+                    "lat": float(row[2]),
+                    "lon": float(row[3])
+                } 
+                for row in rows
+            ]
+            
+            return {"nodes": nodes, "count": len(nodes)}
+            
     except Exception as e:
         print(f"Error fetching nodes: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/constraints/list")
-def get_unique_constraints(db: Session = Depends(get_db)):
+@app.get("/api/utility_data/range")
+def get_utility_data_for_range(
+    startYear: int = Query(..., ge=2020, le=2026),
+    endYear: int = Query(..., ge=2020, le=2026),
+    month: str = Query(...),  # Accepting month as a string
+    db: Session = Depends(get_db)
+):
+    # Convert the month string to a list of integers
     try:
-        query = text("""
-            SELECT DISTINCT monitored_facility 
-            FROM public.pjm_binding_constraints
-            WHERE monitored_facility IS NOT NULL
-            ORDER BY monitored_facility ASC
-        """)
-        
-        result = db.execute(query)
-        constraints = [row[0] for row in result.fetchall()]
-        return {"constraints": constraints}
-        
+        month_list = ast.literal_eval(month)  # Safely evaluate the string to a list
+    except (ValueError, SyntaxError):
+        raise HTTPException(status_code=400, detail="Invalid month format. Use format: [1, 2, 4].")
+
+    # Validate months
+    if any(m < 1 or m > 12 for m in month_list):
+        raise HTTPException(status_code=400, detail="Months must be between 1 (January) and 12 (December).")
+
+    if startYear > endYear:
+        raise HTTPException(status_code=400, detail="Start year must be less than or equal to end year.")
+
+    try:
+        logging.info(f"Received request for utility data with startYear={startYear}, endYear={endYear}, month={month_list}")
+
+        # Base query
+        query_str = """
+            SELECT
+                utility,
+                total,
+                generation,
+                transmission,
+                distribution,
+                other
+            FROM retail_pjm
+            WHERE year >= :start_year AND year <= :end_year
+        """
+
+        # Build month conditions
+        if month_list:
+            month_conditions = " OR ".join([f"month = {m}" for m in month_list])
+            query_str += f" AND ({month_conditions})"
+
+        # Prepare the final query
+        query = text(query_str)
+
+        # Log the query and parameters
+        logging.info(f"Executing query: {query_str} with params: {{'start_year': {startYear}, 'end_year': {endYear}}}")
+
+        # Execute the query
+        results = db.execute(query, {
+            "start_year": startYear,
+            "end_year": endYear
+        }).fetchall()
+
+        data = [
+            {
+                "utility": row.utility,
+                "total": row.total,
+                "generation": row.generation,
+                "transmission": row.transmission,
+                "distribution": row.distribution,
+                "other": row.other,
+            }
+            for row in results
+        ]
+
+        return {"data": data}
+
     except Exception as e:
-        print(f"Server Error in constraints list: {e}")
-        # Return empty list instead of crashing
-        return {"constraints": []}
+        logging.exception("Internal server error occurred during utility data retrieval")
+        raise HTTPException(status_code=500, detail=str(e))
