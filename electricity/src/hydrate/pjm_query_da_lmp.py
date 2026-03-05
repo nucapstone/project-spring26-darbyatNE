@@ -10,7 +10,116 @@ from datetime import date, timedelta, datetime
 # --- CONFIGURATION ---
 load_dotenv()
 
+# 1. DB Configimport os
+import sys
+import requests
+import psycopg2
+from psycopg2.extras import DictCursor
+from dotenv import load_dotenv
+import time
+from datetime import datetime
+
+# --- CONFIGURATION ---
+load_dotenv()
+
 # 1. DB Config
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "database": os.getenv("DB_NAME"),
+    "port": int(os.getenv("DB_PORT", 5432)),
+}
+
+PJM_API_KEY = os.getenv("PJM_API_KEY")
+PJM_API_ENDPOINT = 'https://api.pjm.com/api/v1/da_hrl_lmps'
+DB_TABLE_NAME = 'pjm_da_hrl_lmps'
+
+# Default dates for Manual Runs
+START_DATE = datetime(2026, 3, 1, 0, 0)  # Start at midnight
+END_DATE = datetime(2026, 3, 1, 1, 0)    # End at 1 AM
+
+def fetch_and_upsert_pjm_da_lmp_data_psycopg2():
+    """
+    Fetches PJM historical Day-Ahead LMP data for all PNode IDs for a specific hour.
+    """
+    if not all([PJM_API_KEY, DB_CONFIG["host"]]):
+        print("Error: Missing .env configuration.")
+        return
+
+    conn = None
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor(cursor_factory=DictCursor)
+
+        date_range_str = f"{START_DATE.isoformat()} to {END_DATE.isoformat()}"
+        headers = {'Ocp-Apim-Subscription-Key': PJM_API_KEY}
+
+        print(f"--- Processing Day-Ahead LMPs: {date_range_str} ---")
+
+        # Prepare params for the API request
+        params = {
+            'rowCount': 50000,
+            'order': 'Asc',
+            'startRow': 1,
+            'datetime_beginning_ept': date_range_str
+        }
+
+        try:
+            print("Querying PJM API for LMP data...")
+            response = requests.get(PJM_API_ENDPOINT, headers=headers, params=params, timeout=30)
+            response.raise_for_status()
+            items = response.json().get('items', [])
+
+            if not items:
+                print("No data.")
+            else:
+                # Prepare data
+                rows_to_upsert = []
+                for item in items:
+                    rows_to_upsert.append((
+                        item.get('datetime_beginning_ept'),
+                        item.get('pnode_id'),
+                        item.get('pnode_name'),
+                        item.get('type'),
+                        item.get('system_energy_price_da'),
+                        item.get('total_lmp_da'),
+                        item.get('congestion_price_da'),
+                        item.get('marginal_loss_price_da')
+                    ))
+
+                # Batch upsert
+                sql_upsert = f"""
+                    INSERT INTO {DB_TABLE_NAME} (
+                        datetime_beginning_ept, pnode_id, pnode_name, type,
+                        system_energy_price_da, total_lmp_da, congestion_price_da, marginal_loss_price_da
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (datetime_beginning_ept, pnode_id) DO UPDATE SET
+                        pnode_name = EXCLUDED.pnode_name,
+                        type = EXCLUDED.type,
+                        system_energy_price_da = EXCLUDED.system_energy_price_da,
+                        total_lmp_da = EXCLUDED.total_lmp_da,
+                        congestion_price_da = EXCLUDED.congestion_price_da,
+                        marginal_loss_price_da = EXCLUDED.marginal_loss_price_da
+                """
+
+                cursor.executemany(sql_upsert, rows_to_upsert)
+                conn.commit()
+                print(f"Saved {len(rows_to_upsert)} rows.")
+
+        except Exception as e:
+            print(f"Error: {e}")
+
+    except psycopg2.Error as e:
+        print(f"\nCRITICAL DB ERROR: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+if __name__ == '__main__':
+    fetch_and_upsert_pjm_da_lmp_data_psycopg2()
+
 DB_CONFIG = {
     "host": os.getenv("DB_HOST"),
     "user": os.getenv("DB_USER"),
