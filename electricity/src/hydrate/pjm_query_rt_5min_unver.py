@@ -11,7 +11,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from update_pjm_db import PNODE_IDS 
+from electricity.src.hydrate.update_retail_lmps import PNODE_IDS 
 
 load_dotenv()
 

@@ -1,5 +1,3 @@
-// src/components/zone_plot.js
-
 import * as Plot from "npm:@observablehq/plot";
 import * as d3 from "npm:d3";
 
@@ -148,6 +146,13 @@ export class ZonePlotManager {
     const map = window.mapInstance;
     if (!map) return;
     
+    // --- FIX: Safety Check ---
+    // If the map hasn't loaded the 'zoneShapes' source yet, stop immediately.
+    if (!map.getSource('zoneShapes')) {
+      // console.warn("ZonePlotManager: 'zoneShapes' source not ready yet. Skipping highlight.");
+      return;
+    }
+
     if (!map.getLayer('zone-selected')) {
       map.addLayer({
         id: 'zone-selected',

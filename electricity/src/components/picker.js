@@ -1,28 +1,28 @@
-// src/components/picker.js
-
 import * as d3 from "npm:d3";
+
+console.log("✅ picker.js loaded (Callback Version)");
 
 export function dateTimeRangePicker(options = {}) {
   const {
     width = 800,
-    // Year Configuration
     minYear = 2020,
     maxYear = 2026,
-    initialStartYear = 2020,
-    initialEndYear = 2026,
-    // Month Configuration (Array of indices 0-11 that are selected)
-    initialMonths = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] 
+    initialStartYear = 2025,
+    initialEndYear = 2025,
+    initialMonths = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    // NEW: Direct callbacks
+    onInput = null, 
+    onApply = null
   } = options;
 
   const container = d3.create("div")
     .style("font-family", "system-ui, -apple-system, sans-serif")
     .style("max-width", `${width}px`);
 
-  // --- State Management ---
+  // --- State ---
   let startYear = Math.max(minYear, initialStartYear);
   let endYear = Math.min(maxYear, initialEndYear);
   
-  // Create boolean array for 12 months. Default to true if index is in initialMonths
   let selectedMonths = Array(12).fill(false);
   if (initialMonths && Array.isArray(initialMonths)) {
       initialMonths.forEach(idx => {
@@ -34,7 +34,7 @@ export function dateTimeRangePicker(options = {}) {
 
   const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  // --- UI Construction ---
+  // --- UI ---
   const controlFrame = container.append("div")
     .style("background-color", "#f8f9fa")
     .style("border", "1px solid #ddd")
@@ -42,7 +42,7 @@ export function dateTimeRangePicker(options = {}) {
     .style("padding", "20px")
     .style("margin-bottom", "20px");
 
-  // 1. Month Selector Section
+  // 1. Month Selector
   const monthSection = controlFrame.append("div").style("margin-bottom", "25px");
   monthSection.append("label")
     .style("font-weight", "bold")
@@ -56,8 +56,9 @@ export function dateTimeRangePicker(options = {}) {
     .style("grid-template-columns", "repeat(6, 1fr)") 
     .style("gap", "8px");
 
-  monthButtons = monthLabels.map((label, i) => {
-      return monthsContainer.append("button")
+  monthLabels.forEach((label, i) => {
+      monthsContainer.append("button")
+          .text(label) 
           .style("padding", "8px 0")
           .style("border", "1px solid #007bff")
           .style("border-radius", "4px")
@@ -66,32 +67,24 @@ export function dateTimeRangePicker(options = {}) {
           .style("cursor", "pointer")
           .style("font-size", "12px")
           .style("font-weight", "500")
-          .style("transition", "all 0.2s")
-          .text(label)
           .on("click", function() {
               selectedMonths[i] = !selectedMonths[i];
               const isActive = selectedMonths[i];
               d3.select(this)
                   .style("background-color", isActive ? "#007bff" : "white")
                   .style("color", isActive ? "white" : "#007bff");
-              
-              // Dispatch an event to notify changes
-              const event = new CustomEvent('monthsChanged', {
-                  detail: selectedMonths.map((selected, index) => selected ? index : -1).filter(index => index !== -1) // Pass active month indices
-              });
-              container.node().dispatchEvent(event);
+              triggerUpdate(); 
           });
   });
 
-
-  // 2. Year Slider Section
+  // 2. Year Slider
   const yearSection = controlFrame.append("div").style("margin-bottom", "15px");
   const yearHeaderBox = yearSection.append("div")
     .style("display", "flex")
     .style("justify-content", "space-between")
     .style("margin-bottom", "10px");
   
-  yearHeaderBox.append("label")
+  const yearLabel = yearHeaderBox.append("label")
     .style("font-weight", "bold")
     .style("font-size", "13px")
     .text("Year Range");
@@ -101,8 +94,7 @@ export function dateTimeRangePicker(options = {}) {
     .style("font-weight", "bold")
     .style("color", "#007bff");
 
-  // D3 Slider Setup
-  const svgWidth = (width - 40); // padding adjustment
+  const svgWidth = (width - 40); 
   const svgHeight = 50;
   const margin = { top: 10, right: 20, bottom: 20, left: 20 };
   const innerWidth = svgWidth - margin.left - margin.right;
@@ -110,29 +102,18 @@ export function dateTimeRangePicker(options = {}) {
 
   const svg = yearSection.append("svg")
     .attr("width", svgWidth)
-    .attr("height", svgHeight);
+    .attr("height", svgHeight)
+    .style("overflow", "visible");
 
   const g = svg.append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  // Scale for Years (Linear)
   const yearScale = d3.scaleLinear()
     .domain([minYear, maxYear])
     .range([0, innerWidth])
     .clamp(true);
 
-  // Axis
-  g.append("g")
-    .attr("transform", `translate(0,${innerHeight})`)
-    .call(d3.axisBottom(yearScale)
-      .ticks(maxYear - minYear) // One tick per year
-      .tickFormat(d3.format("d")) // Remove comma (2,020 -> 2020)
-    )
-    .selectAll("text")
-    .style("font-size", "11px")
-    .style("color", "#666");
-
-  // Slider Track
+  // Track
   g.append("line")
     .attr("x1", 0)
     .attr("x2", innerWidth)
@@ -142,62 +123,101 @@ export function dateTimeRangePicker(options = {}) {
     .attr("stroke-width", 6)
     .attr("stroke-linecap", "round");
 
-  // Selected Range Bar
+  // Range Bar
   const rangeRect = g.append("rect")
     .attr("y", innerHeight / 2 - 3)
     .attr("height", 6)
     .attr("fill", "#007bff")
     .attr("rx", 3);
 
-  // Handle Logic
+  // Handle Creator
   const createHandle = (cx) => g.append("circle")
     .attr("cy", innerHeight / 2)
-    .attr("r", 9)
+    .attr("r", 12)
     .attr("fill", "white")
     .attr("stroke", "#007bff")
     .attr("stroke-width", 2)
     .attr("cursor", "ew-resize")
     .attr("cx", cx)
-    .style("filter", "drop-shadow(0px 1px 2px rgba(0,0,0,0.1))");
+    .style("pointer-events", "all");
 
+  // --- DRAG HANDLERS ---
   const startHandle = createHandle(yearScale(startYear))
-    .call(d3.drag().on("drag", function(event) {
-      const val = yearScale.invert(event.x);
-      const snapped = Math.round(val); // Snap to integer year
-      if (snapped < endYear && snapped >= minYear) {
-        startYear = snapped;
-        updateSliderVisuals();
-        updateDisplay();
-      }
-    }));
+    .call(d3.drag()
+      .on("start", () => yearLabel.style("color", "red"))
+      .on("drag", function(event) {
+        const [x] = d3.pointer(event, g.node());
+        const val = yearScale.invert(x);
+        const snapped = Math.round(val); 
+        
+        if (snapped < endYear && snapped >= minYear) {
+          startYear = snapped;
+          updateSliderVisuals();
+          updateDisplay();
+          triggerUpdate(); // <--- Calls the callback
+        }
+      })
+      .on("end", () => yearLabel.style("color", "black"))
+    );
 
   const endHandle = createHandle(yearScale(endYear))
-    .call(d3.drag().on("drag", function(event) {
-      const val = yearScale.invert(event.x);
-      const snapped = Math.round(val); // Snap to integer year
-      if (snapped > startYear && snapped <= maxYear) {
-        endYear = snapped;
-        updateSliderVisuals();
-        updateDisplay();
-      }
-    }));
+    .call(d3.drag()
+      .on("start", () => yearLabel.style("color", "red"))
+      .on("drag", function(event) {
+        const [x] = d3.pointer(event, g.node());
+        const val = yearScale.invert(x);
+        const snapped = Math.round(val); 
+        
+        if (snapped > startYear && snapped <= maxYear) {
+          endYear = snapped;
+          updateSliderVisuals();
+          updateDisplay();
+          triggerUpdate(); // <--- Calls the callback
+        }
+      })
+      .on("end", () => yearLabel.style("color", "black"))
+    );
 
   function updateSliderVisuals() {
     const x1 = yearScale(startYear);
     const x2 = yearScale(endYear);
-    
     startHandle.attr("cx", x1);
     endHandle.attr("cx", x2);
-    rangeRect
-      .attr("x", x1)
-      .attr("width", x2 - x1);
+    rangeRect.attr("x", x1).attr("width", x2 - x1);
   }
 
-    function updateDisplay() {
+  function updateDisplay() {
     yearDisplay.text(`${startYear} - ${endYear}`);
   }
+
+  function getCurrentValue() {
+      const activeMonthIndices = selectedMonths
+        .map((isSelected, index) => isSelected ? index : -1)
+        .filter(index => index !== -1);
+      
+      return {
+          startYear,
+          endYear,
+          months: activeMonthIndices
+      };
+  }
+
+  // --- DIRECT CALLBACK TRIGGER ---
+  function triggerUpdate() {
+      const val = getCurrentValue();
+      container.node().value = val;
+      
+      // 1. Call the direct callback if provided (Bulletproof)
+      if (onInput && typeof onInput === 'function') {
+          console.log("⚡ picker.js calling onInput callback with:", val);
+          onInput(val);
+      }
+      
+      // 2. Also dispatch event for standard listeners (Backup)
+      container.node().dispatchEvent(new Event('input', { bubbles: true }));
+  }
   
-  // 3. Action Buttons
+  // 3. Apply Button
   const actionContainer = controlFrame.append("div")
     .style("display", "flex")
     .style("justify-content", "flex-end")
@@ -216,36 +236,23 @@ export function dateTimeRangePicker(options = {}) {
     .style("font-size", "13px")
     .style("cursor", "pointer")
     .text("Apply & Load Data")
-    .on("click", async function() {
-      const activeMonthIndices = selectedMonths
-        .map((isSelected, index) => isSelected ? index : -1)
-        .filter(index => index !== -1);
-
-      const response = await fetch("/api/utility_data/range", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          startYear: startYear,
-          endYear: endYear,
-          months: activeMonthIndices // Pass the selected months
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Data loaded successfully:", data);
-        // Handle the loaded data (e.g., update the UI or state)
+    .on("click", function() {
+      const val = getCurrentValue();
+      
+      if (onApply && typeof onApply === 'function') {
+          onApply(val);
       } else {
-        console.error("Error loading data:", response.statusText);
-        // Handle the error (e.g., show a notification)
+          container.node().dispatchEvent(new CustomEvent('apply', {
+              bubbles: true,
+              detail: val
+          }));
       }
     });
 
   // Initialize
   updateSliderVisuals();
   updateDisplay();
+  container.node().value = getCurrentValue();
 
   return container.node();
 }

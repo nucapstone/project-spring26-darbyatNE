@@ -14,11 +14,11 @@ load_dotenv(dotenv_path=env_path)
 
 # Try/Except allows this to run whether called directly or via module
 try:
-    from update_pjm_db import PNODE_IDS
+    from electricity.src.hydrate.update_retail_lmps import PNODE_IDS
 except ImportError:
     # Fallback if running from root without package structure
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-    from update_pjm_db import PNODE_IDS
+    from electricity.src.hydrate.update_retail_lmps import PNODE_IDS
 
 DB_CONFIG = {
     "host": os.getenv("DB_HOST"),

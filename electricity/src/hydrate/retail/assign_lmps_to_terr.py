@@ -13,7 +13,7 @@ API_URL = "http://localhost:8000/api/service-terr"
 # 2. Input Excel File (LMP Locations)
 LMP_FILE = 'cleaned_retail_lmps.xlsx'
 
-# 3. Column Mapping (Must match your Excel headers)
+# 3. Column Mapping
 LAT_COL = 'Latitude'
 LONG_COL = 'Longitude'
 LMP_ID_COL = 'Location'
@@ -30,7 +30,7 @@ def get_territories_from_api():
     print(f"📡 Connecting to API: {API_URL}...")
     try:
         response = requests.get(API_URL)
-        response.raise_for_status() # Raise error for 404, 500, etc.
+        response.raise_for_status()
         
         data = response.json()
         

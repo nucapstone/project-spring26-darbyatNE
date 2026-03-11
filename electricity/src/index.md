@@ -13,13 +13,9 @@ pager: false
   const filterTrigger = document.getElementById('filter-trigger');
   if (filterTrigger) {
       filterTrigger.addEventListener('click', (e) => {
-          console.log("Selected months filter box clicked");
-          console.log("Current filter state:", filter);
           const filterModal = document.getElementById('filter-modal');
           if (filterModal) {
-              filterModal.showModal(); // Show the filter modal
-          } else {
-              console.error("Filter modal not found!");
+              filterModal.showModal(); 
           }
       });
   }
@@ -60,20 +56,29 @@ pager: false
 </div>
 
 <!-- Top Controls (Price Type & Filter) -->
-<div class="top-controls-wrapper">
-    <div class="price-selector">
-        <span class="price-label">Price Type &rarr;</span>
-        <input type="radio" id="price-retail" name="price-type" value="retail" checked>
-        <label for="price-retail">Retail</label>
-        <input type="radio" id="price-wholesale" name="price-type" value="wholesale">
-        <label for="price-wholesale">Wholesale</label>
+<div class="top-controls-wrapper" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #f8f9fa; border-bottom: 1px solid #ddd; margin-bottom: 0;">
+    <!-- Left: Price Selector -->
+    <div class="price-selector" style="display: flex; align-items: center; gap: 10px;">
+        <span class="price-label" style="font-weight: bold; color: #555; font-size: 14px;">Price Type &rarr;</span>
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <input type="radio" id="price-retail" name="price-type" value="retail" checked style="cursor: pointer;">
+            <label for="price-retail" style="cursor: pointer; font-size: 14px;">Retail</label>
+        </div>
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <input type="radio" id="price-wholesale" name="price-type" value="wholesale" style="cursor: pointer;">
+            <label for="price-wholesale" style="cursor: pointer; font-size: 14px;">Wholesale</label>
+        </div>
     </div>
-    <!-- Filter Trigger -->
-    <div class="filter-container" id="filter-trigger" style="cursor: pointer; margin-left: auto;" title="Click to configure filters">
-        <span class="filter-label">⚙️ Selected Months &rarr;</span>
-        <div id="top-filter-display">{{ selectedMonths.join(', ') }}</div>
+    <!-- Right: Filter Trigger -->
+    <!-- IMPORTANT: The ID inside here must be 'current-filter-display' -->
+    <div class="filter-container" id="filter-trigger" style="display: flex; align-items: center; gap: 12px; cursor: pointer; background: white; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" title="Click to configure filters">
+        <span class="filter-label" style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">⚙️ Selected Data</span>
+        <div id="current-filter-display" style="min-width: 120px; text-align: right;">
+            <span style="color: #999; font-style: italic; font-size: 12px;">Loading...</span>
+        </div>
     </div>
 </div>
+
 
 <!-- Main Container -->
 <div id="main-container">
@@ -81,7 +86,6 @@ pager: false
     <div id="map"></div>
     <div id="legend"></div>
     <div id="controls-container">
-      <!-- REMOVED: <button id="filter-btn">⚙ Filter</button> -->
       <button id="avg-btn">Avg Price View</button>
       <div id="speed-box">
         <label>Speed</label>
@@ -137,7 +141,7 @@ pager: false
   </div>
 </dialog>
 
-<!-- NEW: Architecture Modal -->
+<!-- Architecture Modal -->
 <dialog id="arch-modal" style="border: none; border-radius: 8px; padding: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 90vw; width: 800px;">
   <div class="modal-header">
     <span>🏗️ System Architecture</span>
@@ -152,17 +156,98 @@ pager: false
 ```js
 import { marked } from "npm:marked"; 
 import { initApp } from "./components/map.js";
-import { initInfoModals } from "./components/ui.js";
+import { initInfoModals, displayCurrentFilter } from "./components/ui.js";
+import { filter, saveFilter } from "./components/filter.js";
+import { dateTimeRangePicker } from "./components/picker.js";
 
-// 1. Initialize UI (Buttons & Modals)
+// 1. Initialize UI
 initInfoModals();
 
-// 2. Helper to strip YAML frontmatter
-function cleanMarkdown(text) {
-  return text.replace(/^---[\s\S]*?---/, '').trim();
+// 2. Initialize Picker
+const picker = dateTimeRangePicker({
+  width: 750, 
+  minYear: 2020,
+  maxYear: 2026,
+  initialStartYear: filter.startYear || 2020,
+  initialEndYear: filter.endYear || 2026,
+  initialMonths: filter.months || [],
+});
+
+// 3. Mount Picker
+const mountPoint = document.getElementById("picker-mount-point");
+if (mountPoint) {
+    mountPoint.innerHTML = "";
+    mountPoint.appendChild(picker);
 }
 
-// 3. Load Content (Setup, Guide, Architecture)
+// 4. Handle Live Updates (Visual only)
+picker.addEventListener('input', (e) => {
+  const val = picker.value;
+  if (!val) return;
+
+  const isAllMonths = val.months && val.months.length === 12;
+
+  const newFilterState = {
+    startYear: val.startYear,
+    endYear: val.endYear,
+    months: isAllMonths ? null : val.months, 
+  };
+
+  saveFilter(newFilterState);
+  displayCurrentFilter(newFilterState);
+});
+
+// 5. Handle APPLY Button (Reloads Data)
+picker.addEventListener('apply', (e) => {
+  console.log("✅ Apply button clicked");
+  
+  // Get the latest values from the picker
+  const val = picker.value;
+
+  // Close modal
+  const modal = document.getElementById('filter-modal');
+  if (modal) modal.close();
+
+  // Show loading state
+  displayCurrentFilter(val, "Loading Data...");
+
+  // Reload page with new URL parameters
+  setTimeout(() => {
+    const url = new URL(window.location);
+    
+    // --- KEY FIX: Save the Years to URL ---
+    url.searchParams.set("start_year", val.startYear);
+    url.searchParams.set("end_year", val.endYear);
+    
+    // Save Months
+    if (val.months && val.months.length > 0 && val.months.length < 12) {
+        url.searchParams.set("months", val.months.join(","));
+    } else {
+        url.searchParams.delete("months");
+    }
+
+    url.searchParams.set("fetch", "true");
+    window.location.href = url.toString();
+  }, 100);
+});
+
+// 6. Initial Header Display
+displayCurrentFilter(filter);
+
+
+// =========================================================
+// DOCS & MAP LOADING
+// =========================================================
+
+function cleanMarkdown(text) {
+  // FIX: Use hex code \x2d for hyphen (-) to prevent the Markdown parser
+  // from seeing '---' and breaking the file structure.
+  const dash = "\x2d\x2d\x2d"; 
+  const pattern = "^" + dash + "[\\s\\S]*?" + dash;
+  const regex = new RegExp(pattern);
+  return text.replace(regex, '').trim();
+}
+
 (async () => {
   try {
     const [setupText, guideText, archText] = await Promise.all([
@@ -171,29 +256,34 @@ function cleanMarkdown(text) {
       FileAttachment("./ARCHITECTURE.md").text()
     ]);
 
-    document.getElementById('setup-content').innerHTML = marked.parse(cleanMarkdown(setupText));
-    document.getElementById('guide-content').innerHTML = marked.parse(cleanMarkdown(guideText));
-    document.getElementById('arch-content').innerHTML = marked.parse(cleanMarkdown(archText));
+    const setupEl = document.getElementById('setup-content');
+    if (setupEl) setupEl.innerHTML = marked.parse(cleanMarkdown(setupText));
+
+    const guideEl = document.getElementById('guide-content');
+    if (guideEl) guideEl.innerHTML = marked.parse(cleanMarkdown(guideText));
+
+    const archEl = document.getElementById('arch-content');
+    if (archEl) archEl.innerHTML = marked.parse(cleanMarkdown(archText));
     
   } catch (err) {
     console.error("Error loading docs:", err);
   }
 })();
 
-// 4. Architecture Button logic
 const btnArch = document.getElementById('btn-arch');
 if (btnArch) {
   btnArch.addEventListener('click', (e) => {
     e.preventDefault();
-    document.getElementById('arch-modal').showModal();
-    document.getElementById('header-help-menu').style.display = 'none';
+    const modal = document.getElementById('arch-modal');
+    if (modal) modal.showModal();
+    const menu = document.getElementById('header-help-menu');
+    if (menu) menu.style.display = 'none';
   });
 }
 
-// 5. Initialize Map App
+// Initialize Map App
 initApp();
 
-// Close dropdown when clicking outside
 document.addEventListener('click', function(event) {
   const menu = document.getElementById('header-help-menu');
   const btn = event.target.closest('.header-btn');

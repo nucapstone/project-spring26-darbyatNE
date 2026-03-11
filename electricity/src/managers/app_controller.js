@@ -1,13 +1,12 @@
-// src/managers/app_controller.js
-
 import maplibregl from "maplibre-gl";
 import { API_BASE_URL } from "../utils/config.js";
 import { displayCurrentFilter } from "../components/ui.js";
 
-// Ensure this class is exported exactly as 'MapController'
 export class MapController {
-    constructor() {
-        this.map = null;
+    constructor(map, uiElements = {}) {
+        this.map = map;
+        this.ui = uiElements; 
+
         this.popup = null;
         this.congestionHelpPopup = null;
         
@@ -41,8 +40,6 @@ export class MapController {
 
     async loadData(filter) {
         this.currentFilter = filter;
-        
-        // GUARD CLAUSE: Prevent API call if dates are missing
         if (!filter.startDate || !filter.endDate) {
             console.warn("MapController: Missing dates in filter, skipping API load.");
             displayCurrentFilter(filter, 0);
@@ -50,11 +47,6 @@ export class MapController {
         }
 
         displayCurrentFilter(filter, "Loading...");
-
-        // ---------------------------------------------------------
-        // 🛑 TEMPORARY: API Call Silenced for Monthly Refactor
-        // ---------------------------------------------------------
-        console.warn("⚠️ API Call temporarily disabled in MapController.loadData (Pending Monthly Price Logic)");
         
         // Reset data to empty to prevent UI errors
         this.zoneData = [];
@@ -85,6 +77,7 @@ export class MapController {
     }
 
     renderData() {
+        // Safety check: ensure map and source exist
         if (!this.map || !this.map.getSource('zones')) return;
 
         const expression = ['match', ['get', 'Zone_Name']];
@@ -109,6 +102,12 @@ export class MapController {
 
         this.map.setPaintProperty('zone-fill', 'fill-color', expression);
         this.updateZoneBorders();
+    }
+
+    // --- NEW METHOD ADDED TO FIX CRASH ---
+    renderCurrentView() {
+        // This bridges the gap between map.js and this controller
+        this.renderData();
     }
 
     getColorForPrice(price, min, max) {
@@ -177,9 +176,13 @@ export class MapController {
     }
 
     handleMapClick(e) {
-        const features = this.map.queryRenderedFeatures(e.point, { layers: ['zone-fill'] });
+        const features = this.map.queryRenderedFeatures(e.point, { 
+            layers: ['serviceTerritoryFill', 'serviceTerritoryFill-3d'] 
+        });
+
         if (features.length > 0) {
-            const clickedZone = features[0].properties.Zone_Name;
+            const clickedZone = features[0].properties.Zone_Code;
+            
             this.selectedZoneName = clickedZone;
             
             if (this.activePriceType === 'congestion') {
@@ -218,21 +221,6 @@ export class MapController {
             console.log(`Hovered over: ${feature.properties.Zone_Code}`);
         }
     }
-
-    // setPriceMode(mode) {
-    //     this.activePriceType = mode;
-        
-    //     if (mode === 'congestion' && !this.selectedZoneName) {
-    //         this.selectedZoneName = 'PJM';
-    //     }
-
-    //     if (mode === 'congestion' || mode === 'net') {
-    //         this.calculateZonePrices();
-    //         this.renderData();
-    //     } else {
-    //         this.loadData(this.currentFilter);
-    //     }
-    // }
 
     createZonePopupHTML(zoneName, priceType, value) {
         const formattedPrice = value !== null ? `$${value.toFixed(2)}` : 'N/A';

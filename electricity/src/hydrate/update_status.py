@@ -1,4 +1,22 @@
-# src/hydrate/update_status.py
+""" 
+src/hydrate/update_status.py
+
+Script: Status Table Initialization & Backfill
+
+Description:
+    This script initializes the 'pjm_hourly_status' table and populates it 
+    based on existing data in the main 'pjm_rt_hrl_lmps' table.
+    
+    It performs two main actions:
+    1. Creates the 'pjm_hourly_status' table if it does not exist.
+    2. Scans the main data table for unique timestamps and inserts them 
+       into the status table marked as 'v' (Verified).
+
+Usage:
+    Run this script ONCE to sync the status tracker with current 
+    historical data. This prevents the scraper from re-downloading 
+    data you already possess.
+"""
 
 import os
 from pathlib import Path

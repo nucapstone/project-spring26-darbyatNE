@@ -227,7 +227,13 @@ export function initApp() {
             // Hover Logic
             ['serviceTerritoryFill', 'serviceTerritoryFill-3d'].forEach(layerId => {
                 map.on('mousemove', layerId, (e) => controller.handleMapHover(e));
-                map.on('mouseleave', layerId, () => controller.hoverPopup.remove());
+                
+                // FIXED: Check if popup exists before removing
+                map.on('mouseleave', layerId, () => {
+                    if (controller.hoverPopup) {
+                        controller.hoverPopup.remove();
+                    }
+                });
                 map.on('click', layerId, (e) => {
                     const feature = e.features[0];
                     const zoneCode = feature.properties.Zone_Code; 

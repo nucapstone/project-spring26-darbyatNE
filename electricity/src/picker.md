@@ -10,8 +10,6 @@ import { API_BASE_URL } from "../utils/config.js";
 
 (async () => {
   // 1. Initialize Picker
-  // We removed the constraint fetching block entirely.
-  // We now pass Year and Month configurations instead of Date/Time/Constraint props.
   const picker = dateTimeRangePicker({
     width: 800,
     
@@ -22,7 +20,6 @@ import { API_BASE_URL } from "../utils/config.js";
     initialEndYear: filter.endYear || 2026,
 
     // Month Selector Configuration (Jan, Feb...)
-    // Assuming filter.months is an array of selected month indices (0-11)
     initialMonths: filter.months || [],
   });
 
