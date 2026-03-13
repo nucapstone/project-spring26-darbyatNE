@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Any
 import ast
 import collections
 
@@ -340,4 +340,27 @@ def get_utility_data_for_range(
 
     except Exception as e:
         logging.exception("Internal server error occurred during utility data retrieval")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/retail_lmps")
+def get_retail_lmps_data(
+    db: Session = Depends(get_db)
+):
+    try:
+        logging.info("Fetching all retail_lmps")
+        
+        # 1. Base Query: Select ALL columns with no filters
+        sql = "SELECT * FROM retail_lmps"
+        params = {}
+        
+        # 2. Execute
+        result = db.execute(text(sql), params)
+        
+        # 3. Convert to List of Dictionaries (Dynamic columns)
+        data = [row._asdict() for row in result.fetchall()]
+        
+        return {"data": data, "count": len(data)}
+
+    except Exception as e:
+        logging.error(f"Error fetching retail_lmps: {e}")
         raise HTTPException(status_code=500, detail=str(e))

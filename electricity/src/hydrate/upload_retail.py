@@ -1,3 +1,5 @@
+#  This script imports retail service company monthly rates into the retail_monthly_rates_pjm table of the electricity_db
+
 import os
 import sys
 import pandas as pd
@@ -10,7 +12,7 @@ def main():
     load_dotenv()
 
     # Define the directory containing the Excel files
-    data_dir = Path(__file__).parent / 'retail/PJM_data'  # Adjusted to use the script's directory
+    data_dir = Path(__file__).parent / 'retail/PJM_data'
 
     # Database configuration
     db_config = {
@@ -29,7 +31,7 @@ def main():
         engine = create_engine(connection_string)
 
         # Always use the 'retail_pjm' table for data insertion
-        table_name = 'retail_pjm'
+        table_name = 'retail_monthly_rates_pjm'
         print(f"Using table: {table_name}")
 
         # Iterate over all Excel files in the specified directory
@@ -62,10 +64,9 @@ def main():
             print(f"Renamed columns: {df.columns}")
             print(f"Number of rows to insert: {len(df)}")
 
-            # Check if DataFrame is empty
             if df.empty:
                 print(f"No data found in {excel_file.name}. Skipping this file.")
-                continue  # Skip to the next file
+                continue
 
             # Upsert data into the 'retail_pjm' table
             df.to_sql(table_name, con=engine, if_exists='append', index=False)

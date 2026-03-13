@@ -153,6 +153,152 @@ export function initApp() {
                 } 
             });
             
+            // --- NEW: Fetch LMP Data for Retail Territories ---
+            console.log("Attempting to fetch LMP data from:", `${API_BASE_URL}/api/retail_lmps`);
+
+            const lmpResponse = await fetch(`${API_BASE_URL}/api/retail_lmps`).catch(error => {
+                console.error("Network error fetching LMP data:", error);
+                return null; // Return null to indicate failure
+            });
+
+            let lmpData = [];
+            if (lmpResponse && lmpResponse.ok) {
+                try {
+                    const responseData = await lmpResponse.json();
+                    console.log("LMP Data Response (full structure for debugging):", responseData); // Log the entire response for debugging
+                    
+                    // Extract the array from the 'data' key as per API structure
+                    if (responseData && Array.isArray(responseData.data)) {
+                        lmpData = responseData.data;
+                        console.log("Response contains 'data' array, using it. First few records:", responseData.data.slice(0, 3));
+                        console.log("Total records in response:", responseData.count);
+                    } else {
+                        console.error("LMP Data response does not contain a 'data' array as expected:", responseData);
+                        lmpData = []; // Fallback to empty array to prevent errors
+                    }
+                } catch (error) {
+                    console.error("Error parsing LMP data JSON:", error);
+                    lmpData = []; // Fallback to empty array
+                }
+            } else {
+                console.error("Failed to fetch LMP data, response not OK or fetch failed:", lmpResponse ? { status: lmpResponse.status, statusText: lmpResponse.statusText } : "No response");
+                console.log("Using empty dataset as fallback due to API unavailability.");
+                lmpData = []; // Empty array to avoid breaking the map rendering
+            }
+
+            // Create GeoJSON for LMP Pins using latitude and longitude from retail_lmps data
+            const lmpFeatures = lmpData.map((lmp, index) => {
+                // Access latitude and longitude as double precision numbers
+                const latVal = lmp.latitude;
+                const lonVal = lmp.longitude;
+                
+                // Log raw values for debugging (limited to first few records)
+                if (index < 5) { // Limit to first few records to avoid console clutter
+                    console.log(`Record ${index} raw coordinates for ${lmp.service_territory || 'unknown'} (${lmp.name || 'N/A'}): latitude=${latVal}, longitude=${lonVal}, type of latitude=${typeof latVal}, type of longitude=${typeof lonVal}`);
+                }
+                
+                // Parse as float to ensure numeric values (even if stored as strings)
+                const lat = parseFloat(latVal);
+                const lon = parseFloat(lonVal);
+                
+                // Check if coordinates are valid numbers; skip if not
+                if (isNaN(lat) || isNaN(lon)) {
+                    console.warn(`Invalid coordinates for LMP record in ${lmp.service_territory || 'unknown'} (${lmp.name || 'N/A'}): latitude=${latVal}, longitude=${lonVal}, Parsed lat=${lat}, Parsed lon=${lon}`);
+                    return null;
+                }
+                
+                // Validate geographic range for latitude and longitude
+                if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                    console.warn(`Out of range coordinates for LMP record in ${lmp.service_territory || 'unknown'} (${lmp.name || 'N/A'}): latitude=${lat}, longitude=${lon}`);
+                    return null;
+                }
+                
+                return {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [lon, lat] // MapLibre expects [longitude, latitude]
+                    },
+                    properties: {
+                        service_territory: lmp.service_territory || 'Unknown',
+                        name: lmp.name || 'N/A',
+                        pnode_id: lmp.pnode_id || 'N/A',
+                        type: lmp.type || 'N/A',
+                        voltage: lmp.voltage || 'N/A',
+                        latitude: lat, // Store the parsed numeric value for display
+                        longitude: lon, // Store the parsed numeric value for display
+                        location_context: lmp.location_context || 'N/A'
+                    }
+                };
+            }).filter(feature => feature !== null); // Filter out invalid features
+
+            console.log(`Total LMP records processed: ${lmpData.length}, Valid features created: ${lmpFeatures.length}`);
+
+            const lmpGeoJson = {
+                type: 'FeatureCollection',
+                features: lmpFeatures
+            };
+
+            // Add source for LMP pins
+            map.addSource('retailLmpPins', {
+                type: 'geojson',
+                data: lmpGeoJson
+            });
+
+            // Add layer for LMP pins (above zones layer)
+            map.addLayer({
+                id: 'retailLmpPinsLayer',
+                type: 'circle', // Could also use 'symbol' for custom icons
+                source: 'retailLmpPins',
+                layout: {
+                    'visibility': 'visible'
+                },
+                paint: {
+                    'circle-radius': 6,
+                    'circle-color': ['match', ['get', 'service_territory'], ...fillColorExpression.slice(2)], // Reuse the same color expression as territories
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#FFFFFF'
+                }
+            }, 'serviceTerritoryLabels'); // Place above zones but below labels if desired, adjust as needed
+
+            // Add hover popup for metadata
+            const popup = new maplibregl.Popup({
+                closeButton: false,
+                closeOnClick: false
+            });
+
+            map.on('mouseenter', 'retailLmpPinsLayer', (e) => {
+                map.getCanvas().style.cursor = 'pointer';
+                const coordinates = e.features[0].geometry.coordinates.slice();
+                const props = e.features[0].properties;
+
+                // Create popup content with metadata, excluding 'zone'
+                const description = `
+                    <h4>${props.service_territory}</h4>
+                    <p><strong>Name:</strong> ${props.name}</p>
+                    <p><strong>PNode ID:</strong> ${props.pnode_id}</p>
+                    <p><strong>Type:</strong> ${props.type}</p>
+                    <p><strong>Voltage:</strong> ${props.voltage}</p>
+                    <p><strong>Latitude:</strong> ${props.latitude.toFixed(3)}</p>
+                    <p><strong>Longitude:</strong> ${props.longitude.toFixed(3)}</p>
+                    <p><strong>Location Context:</strong> ${props.location_context}</p>
+                `;
+
+                // Ensure popup displays even if coordinates are slightly off-screen
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                }
+
+                popup.setLngLat(coordinates)
+                    .setHTML(description)
+                    .addTo(map);
+            });
+
+            map.on('mouseleave', 'retailLmpPinsLayer', () => {
+                map.getCanvas().style.cursor = '';
+                popup.remove();
+            });
+            
             // --- GENERATE LEGEND ---
             const legendEl = document.getElementById('legend');
             if (legendEl) {
@@ -321,9 +467,11 @@ export function initApp() {
         filterBtn.onclick = async () => {
             mountPoint.innerHTML = ''; 
 
-
             const picker = dateTimeRangePicker({
                 width: 520, 
+                initialStartYear: filter.startYear, // Use the start year from filter
+                initialEndYear: filter.endYear,     // Use the end year from filter
+                initialMonths: filter.months,       // Use the months from filter
                 initialStartTime: filter.startTime,
                 initialEndTime: filter.endTime,
                 initialStartDate: filter.startDate,
