@@ -34,6 +34,7 @@ export function initApp() {
     });
     
     window.mapController = controller;
+    controller.init(map); // Initialize the controller's map listeners
 
     // 3. Map Load Logic
     map.on('load', async () => {
@@ -56,18 +57,17 @@ export function initApp() {
             });
 
             // --- COLOR GENERATION LOGIC ---
-            // 1. Get list of unique zone names
             const uniqueZones = [...new Set(shapes.features.map(f => f.properties.Zone_Code))].sort();
-
-            // 2. Create a D3 Ordinal Scale
             const zoneColorScale = d3.scaleOrdinal(d3.schemeTableau10).domain(uniqueZones);
 
-            // 3. Build MapLibre 'match' expression
             const fillColorExpression = ['match', ['get', 'Zone_Code']];
             uniqueZones.forEach(zone => {
                 fillColorExpression.push(zone, zoneColorScale(zone));
             });
             fillColorExpression.push('#cccccc'); // Fallback color
+
+            // Save the locational colors to the controller so we can toggle back to them
+            controller.locationalColorExpression = fillColorExpression;
 
             // Generate Label Points
             const labelFeatures = shapes.features.flatMap(f => {
@@ -88,26 +88,24 @@ export function initApp() {
             map.addSource('zoneLabelPoints', { type: 'geojson', data: { type: 'FeatureCollection', features: labelFeatures } });
             
             // --- LAYERS ---
-            // 1. Standard 2D Fill
             map.addLayer({ 
                 id: 'serviceTerritoryFill', 
                 type: 'fill', 
                 source: 'serviceTerritories', 
                 layout: { 'visibility': 'visible' },
                 paint: { 
-                    "fill-color": fillColorExpression, // Apply unique colors
+                    "fill-color": fillColorExpression, 
                     "fill-opacity": 0.7 
                 } 
             });
 
-            // 2. 3D Extrusion
             map.addLayer({
                 id: 'serviceTerritoryFill-3d',
                 type: 'fill-extrusion',
                 source: 'serviceTerritories',
                 layout: { 'visibility': 'none' },
                 paint: {
-                    'fill-extrusion-color': fillColorExpression, // Apply unique colors
+                    'fill-extrusion-color': fillColorExpression, 
                     'fill-extrusion-height': 0, 
                     'fill-extrusion-base': 0,
                     'fill-extrusion-opacity': 0.9,
@@ -119,20 +117,14 @@ export function initApp() {
                 id: 'serviceTerritoryLines', 
                 type: 'line', 
                 source: 'serviceTerritories', 
-                paint: { 
-                    'line-color': '#000', 
-                    'line-width': 1.5 
-                } 
+                paint: { 'line-color': '#000', 'line-width': 1.5 } 
             });
             
             map.addLayer({ 
                 id: 'serviceTerritoryLines-selected', 
                 type: 'line', 
                 source: 'serviceTerritories', 
-                paint: { 
-                    'line-color': '#000', 
-                    'line-width': 5 
-                },
+                paint: { 'line-color': '#000', 'line-width': 5 },
                 filter: ['==', 'Zone_Code', ''] 
             });
             
@@ -143,7 +135,7 @@ export function initApp() {
                 layout: { 
                     'text-field': ['get', 'Label_Text'], 
                     'text-size': 12, 
-                    'text-allow-overlap': false, // Changed to false to prevent clutter if names are long
+                    'text-allow-overlap': false, 
                     'text-ignore-placement': false 
                 }, 
                 paint: { 
@@ -153,126 +145,74 @@ export function initApp() {
                 } 
             });
             
-            // --- NEW: Fetch LMP Data for Retail Territories ---
-            console.log("Attempting to fetch LMP data from:", `${API_BASE_URL}/api/retail_lmps`);
-
+            // --- Fetch LMP Data for Retail Territories ---
             const lmpResponse = await fetch(`${API_BASE_URL}/api/retail_lmps`).catch(error => {
                 console.error("Network error fetching LMP data:", error);
-                return null; // Return null to indicate failure
+                return null;
             });
 
             let lmpData = [];
             if (lmpResponse && lmpResponse.ok) {
                 try {
                     const responseData = await lmpResponse.json();
-                    console.log("LMP Data Response (full structure for debugging):", responseData); // Log the entire response for debugging
-                    
-                    // Extract the array from the 'data' key as per API structure
                     if (responseData && Array.isArray(responseData.data)) {
                         lmpData = responseData.data;
-                        console.log("Response contains 'data' array, using it. First few records:", responseData.data.slice(0, 3));
-                        console.log("Total records in response:", responseData.count);
-                    } else {
-                        console.error("LMP Data response does not contain a 'data' array as expected:", responseData);
-                        lmpData = []; // Fallback to empty array to prevent errors
                     }
                 } catch (error) {
                     console.error("Error parsing LMP data JSON:", error);
-                    lmpData = []; // Fallback to empty array
                 }
-            } else {
-                console.error("Failed to fetch LMP data, response not OK or fetch failed:", lmpResponse ? { status: lmpResponse.status, statusText: lmpResponse.statusText } : "No response");
-                console.log("Using empty dataset as fallback due to API unavailability.");
-                lmpData = []; // Empty array to avoid breaking the map rendering
             }
 
-            // Create GeoJSON for LMP Pins using latitude and longitude from retail_lmps data
-            const lmpFeatures = lmpData.map((lmp, index) => {
-                // Access latitude and longitude as double precision numbers
-                const latVal = lmp.latitude;
-                const lonVal = lmp.longitude;
+            const lmpFeatures = lmpData.map((lmp) => {
+                const lat = parseFloat(lmp.latitude);
+                const lon = parseFloat(lmp.longitude);
                 
-                // Log raw values for debugging (limited to first few records)
-                if (index < 5) { // Limit to first few records to avoid console clutter
-                    console.log(`Record ${index} raw coordinates for ${lmp.service_territory || 'unknown'} (${lmp.name || 'N/A'}): latitude=${latVal}, longitude=${lonVal}, type of latitude=${typeof latVal}, type of longitude=${typeof lonVal}`);
-                }
-                
-                // Parse as float to ensure numeric values (even if stored as strings)
-                const lat = parseFloat(latVal);
-                const lon = parseFloat(lonVal);
-                
-                // Check if coordinates are valid numbers; skip if not
-                if (isNaN(lat) || isNaN(lon)) {
-                    console.warn(`Invalid coordinates for LMP record in ${lmp.service_territory || 'unknown'} (${lmp.name || 'N/A'}): latitude=${latVal}, longitude=${lonVal}, Parsed lat=${lat}, Parsed lon=${lon}`);
-                    return null;
-                }
-                
-                // Validate geographic range for latitude and longitude
-                if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-                    console.warn(`Out of range coordinates for LMP record in ${lmp.service_territory || 'unknown'} (${lmp.name || 'N/A'}): latitude=${lat}, longitude=${lon}`);
+                if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
                     return null;
                 }
                 
                 return {
                     type: 'Feature',
-                    geometry: {
-                        type: 'Point',
-                        coordinates: [lon, lat] // MapLibre expects [longitude, latitude]
-                    },
+                    geometry: { type: 'Point', coordinates: [lon, lat] },
                     properties: {
                         service_territory: lmp.service_territory || 'Unknown',
                         name: lmp.name || 'N/A',
                         pnode_id: lmp.pnode_id || 'N/A',
                         type: lmp.type || 'N/A',
                         voltage: lmp.voltage || 'N/A',
-                        latitude: lat, // Store the parsed numeric value for display
-                        longitude: lon, // Store the parsed numeric value for display
+                        latitude: lat, 
+                        longitude: lon, 
                         location_context: lmp.location_context || 'N/A'
                     }
                 };
-            }).filter(feature => feature !== null); // Filter out invalid features
+            }).filter(feature => feature !== null);
 
-            console.log(`Total LMP records processed: ${lmpData.length}, Valid features created: ${lmpFeatures.length}`);
-
-            const lmpGeoJson = {
-                type: 'FeatureCollection',
-                features: lmpFeatures
-            };
-
-            // Add source for LMP pins
             map.addSource('retailLmpPins', {
                 type: 'geojson',
-                data: lmpGeoJson
+                data: { type: 'FeatureCollection', features: lmpFeatures }
             });
 
-            // Add layer for LMP pins (above zones layer)
             map.addLayer({
                 id: 'retailLmpPinsLayer',
-                type: 'circle', // Could also use 'symbol' for custom icons
+                type: 'circle', 
                 source: 'retailLmpPins',
-                layout: {
-                    'visibility': 'visible'
-                },
+                layout: { 'visibility': 'visible' },
                 paint: {
                     'circle-radius': 6,
-                    'circle-color': ['match', ['get', 'service_territory'], ...fillColorExpression.slice(2)], // Reuse the same color expression as territories
+                    'circle-color': ['match', ['get', 'service_territory'], ...fillColorExpression.slice(2)], 
                     'circle-stroke-width': 1,
                     'circle-stroke-color': '#FFFFFF'
                 }
-            }, 'serviceTerritoryLabels'); // Place above zones but below labels if desired, adjust as needed
+            }, 'serviceTerritoryLabels');
 
-            // Add hover popup for metadata
-            const popup = new maplibregl.Popup({
-                closeButton: false,
-                closeOnClick: false
-            });
+            // Add hover popup for pins
+            const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
 
             map.on('mouseenter', 'retailLmpPinsLayer', (e) => {
                 map.getCanvas().style.cursor = 'pointer';
                 const coordinates = e.features[0].geometry.coordinates.slice();
                 const props = e.features[0].properties;
 
-                // Create popup content with metadata, excluding 'zone'
                 const description = `
                     <h4>${props.service_territory}</h4>
                     <p><strong>Name:</strong> ${props.name}</p>
@@ -284,14 +224,11 @@ export function initApp() {
                     <p><strong>Location Context:</strong> ${props.location_context}</p>
                 `;
 
-                // Ensure popup displays even if coordinates are slightly off-screen
                 while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
                     coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
                 }
 
-                popup.setLngLat(coordinates)
-                    .setHTML(description)
-                    .addTo(map);
+                popup.setLngLat(coordinates).setHTML(description).addTo(map);
             });
 
             map.on('mouseleave', 'retailLmpPinsLayer', () => {
@@ -326,10 +263,7 @@ export function initApp() {
             const zoneListEl = document.getElementById('zone-list');
             const zones = [
                 { name: "PJM", center: [-85, 38.6] }, 
-                ...shapes.features.map(f => ({ 
-                    name: f.properties.Zone_Code, 
-                    center: d3.geoCentroid(f) 
-                })).sort((a, b) => a.name.localeCompare(b.name))
+                ...shapes.features.map(f => ({ name: f.properties.Zone_Code, center: d3.geoCentroid(f) })).sort((a, b) => a.name.localeCompare(b.name))
             ];
             
             if (zoneListEl) {
@@ -347,13 +281,7 @@ export function initApp() {
                     if (zData) {
                         if (zData.name === 'PJM') {
                             const is3D = map.getPitch() > 10;
-                            map.flyTo({ 
-                                center: zData.center, 
-                                zoom: 5, 
-                                pitch: is3D ? 30 : 0, 
-                                bearing: is3D ? -2 : 0, 
-                                essential: true 
-                            });
+                            map.flyTo({ center: zData.center, zoom: 5, pitch: is3D ? 30 : 0, bearing: is3D ? -2 : 0, essential: true });
                             controller.selectedZoneName = null;
                             map.setFilter('serviceTerritoryLines-selected', ['==', 'Zone_Code', '']);
                         } else {
@@ -370,28 +298,15 @@ export function initApp() {
             zonePlotManager.initialize(map, filter);
             window.zonePlotManager = zonePlotManager;
 
-            // Hover Logic
+            // Hover Logic for Sidebar scrolling
             ['serviceTerritoryFill', 'serviceTerritoryFill-3d'].forEach(layerId => {
-                map.on('mousemove', layerId, (e) => controller.handleMapHover(e));
-                
-                // FIXED: Check if popup exists before removing
-                map.on('mouseleave', layerId, () => {
-                    if (controller.hoverPopup) {
-                        controller.hoverPopup.remove();
-                    }
-                });
                 map.on('click', layerId, (e) => {
                     const feature = e.features[0];
                     const zoneCode = feature.properties.Zone_Code; 
                     map.setFilter('serviceTerritoryLines-selected', ['==', 'Zone_Code', zoneCode]);
                     const zData = zones.find(z => z.name === zoneCode);
                     if (zData) {
-                        map.flyTo({ 
-                            center: zData.center, 
-                            zoom: 6, 
-                            pitch: map.getPitch(), 
-                            bearing: map.getBearing() 
-                        });
+                        map.flyTo({ center: zData.center, zoom: 6, pitch: map.getPitch(), bearing: map.getBearing() });
                         document.querySelectorAll('.zone-item').forEach(i => i.classList.remove('selected'));
                         const listItem = document.querySelector(`.zone-item[data-zone-name="${zoneCode}"]`);
                         if (listItem) {
@@ -400,7 +315,6 @@ export function initApp() {
                         }
                         controller.selectedZoneName = zoneCode;
                     }
-                    controller.handleMapClick(e, false);
                 });
             });
 
@@ -409,34 +323,79 @@ export function initApp() {
                 Object.assign(filter, { startDate: today, endDate: today, startTime: 0, endTime: 24, daysOfWeek: Array(7).fill(true) });
             }
             displayCurrentFilter(filter);
+            
+            // Fetch the price data in the background!
             controller.loadData(filter);
 
         } catch (e) { console.error("Map Load Error", e); }
     });
 
     // 4. Bind DOM Controls
-    const priceSelector = document.querySelector('.price-selector');
-    if (priceSelector) {
-        priceSelector.addEventListener('change', (e) => {
+    const priceSelectorBox = document.querySelector('.price-selector'); 
+    
+    if (priceSelectorBox) {
+        // 1. Master Toggle: Clicking the box itself
+        priceSelectorBox.addEventListener('click', (e) => {
+            // If they clicked a radio button or its label directly, let the 'change' event handle it
+            if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'label') return;
+
+            const isCurrentlyOn = priceSelectorBox.classList.contains('highlighted');
+            
+            if (isCurrentlyOn) {
+                // TURN OFF -> Switch to Locational View
+                priceSelectorBox.classList.remove('highlighted');
+                controller.setPriceType('locational');
+                
+                // If you have a 'locational' radio button, visually check it
+                const locationalRadio = priceSelectorBox.querySelector('input[value="locational"]');
+                if (locationalRadio) locationalRadio.checked = true;
+                
+            } else {
+                // TURN ON -> Switch to Pricing View
+                priceSelectorBox.classList.add('highlighted');
+                
+                // Find which pricing radio is checked (ignore locational)
+                let targetRadio = priceSelectorBox.querySelector('input[type="radio"]:checked:not([value="locational"])');
+                
+                // If no price radio is selected, default to 'retail'
+                if (!targetRadio) {
+                    targetRadio = priceSelectorBox.querySelector('input[value="retail"]');
+                    if (targetRadio) targetRadio.checked = true;
+                }
+                
+                const priceType = targetRadio ? targetRadio.value : 'retail';
+                
+                buildLegend((priceType === 'net' || priceType === 'congestion') ? NET_COLOR_SCALE : COLOR_SCALE);
+                controller.setPriceType(priceType);
+            }
+        });
+
+        // 2. Existing Behavior: Clicking the radio buttons directly
+        priceSelectorBox.addEventListener('change', (e) => {
             if (e.target.type === 'radio') {
                 const priceType = e.target.value;
-                buildLegend((priceType === 'net' || priceType === 'congestion') ? NET_COLOR_SCALE : COLOR_SCALE);
+                
+                // Sync the box highlight state with the radio choice
+                if (priceType === 'locational') {
+                    priceSelectorBox.classList.remove('highlighted');
+                } else {
+                    priceSelectorBox.classList.add('highlighted');
+                    buildLegend((priceType === 'net' || priceType === 'congestion') ? NET_COLOR_SCALE : COLOR_SCALE);
+                }
+                
                 controller.setPriceType(priceType);
             }
         });
     }
 
+
     // Play Button
     const playBtn = document.getElementById('play-btn');
-    if (playBtn) {
-        playBtn.onclick = () => controller.togglePlay();
-    }
+    if (playBtn) { playBtn.onclick = () => controller.togglePlay(); }
 
     // Average Button
     const avgBtn = document.getElementById('avg-btn');
-    if (avgBtn) {
-        avgBtn.onclick = () => { controller.stopAnimation(); controller.renderAverageView(); };
-    }
+    if (avgBtn) { avgBtn.onclick = () => { controller.stopAnimation(); controller.renderAverageView(); }; }
 
     // Time Slider
     const slider = document.getElementById('slider');
@@ -445,7 +404,6 @@ export function initApp() {
             controller.stopAnimation(); 
             const index = parseInt(e.target.value);
             controller.renderTimeStep(index); 
-            
             if (zonePlotManager.timeSeriesData && zonePlotManager.timeSeriesData[index]) {
                 zonePlotManager.updateTimeCursor(zonePlotManager.timeSeriesData[index].datetime);
             }
@@ -454,9 +412,7 @@ export function initApp() {
     
     // Speed Slider
     const speedSlider = document.getElementById('speed-slider');
-    if (speedSlider) {
-        speedSlider.oninput = (e) => controller.setPlaybackSpeed(parseInt(e.target.value));
-    }
+    if (speedSlider) { speedSlider.oninput = (e) => controller.setPlaybackSpeed(parseInt(e.target.value)); }
 
     // Filter Trigger (Top Label)
     const filterBtn = document.getElementById('filter-trigger'); 
@@ -469,9 +425,9 @@ export function initApp() {
 
             const picker = dateTimeRangePicker({
                 width: 520, 
-                initialStartYear: filter.startYear, // Use the start year from filter
-                initialEndYear: filter.endYear,     // Use the end year from filter
-                initialMonths: filter.months,       // Use the months from filter
+                initialStartYear: filter.startYear, 
+                initialEndYear: filter.endYear,     
+                initialMonths: filter.months,       
                 initialStartTime: filter.startTime,
                 initialEndTime: filter.endTime,
                 initialStartDate: filter.startDate,
@@ -484,6 +440,15 @@ export function initApp() {
                 Object.assign(filter, newFilter);
                 saveFilter(filter);
                 displayCurrentFilter(filter);
+                
+                // --- NEW LOGIC ADDED HERE ---
+                // Automatically switch the UI and Map to 'Retail' view so the user 
+                // sees the heatmap they just loaded (this also hides the pins!)
+                const retailRadio = document.querySelector('input[value="retail"]');
+                if (retailRadio) retailRadio.checked = true;
+                controller.setPriceType('retail');
+                // ----------------------------
+
                 controller.loadData(filter);
                 modal.close();
             });

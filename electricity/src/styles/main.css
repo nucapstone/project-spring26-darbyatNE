@@ -131,6 +131,16 @@ body {
   overflow: hidden; 
   border: 1px solid #aaa; 
   flex-shrink: 0; 
+  cursor: pointer;           /* NEW: Makes the whole box clickable */
+  transition: all 0.3s ease; /* NEW: Smooth transition */
+  background: #f0f0f0;       /* Base background color */
+}
+
+/* NEW: Highlighted state (On / Pricing) */
+.price-selector.highlighted {
+  background-color: #f0f8ff; 
+  border: 2px solid #007bff; 
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
 }
 
 .price-selector input[type="radio"] { display: none; }
@@ -138,7 +148,7 @@ body {
 .price-selector label {
   padding: 8px 16px; 
   cursor: pointer; 
-  background: #f0f0f0; 
+  background: transparent;   /* Let the container background show through */
   user-select: none;
   transition: background 0.2s; 
   font-size: 14px; 

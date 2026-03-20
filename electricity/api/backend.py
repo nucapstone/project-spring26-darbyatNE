@@ -73,23 +73,20 @@ def get_service_territories(db: Session = Depends(get_db)):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         csv_path = os.path.join(base_dir, "..", "src", "hydrate", "retail", "utility_names.csv")
         
-        logging.info(f"Checking CSV Path: {csv_path}, Exists: {os.path.exists(csv_path)}")
-
-        target_names = []
-        if os.path.exists(csv_path):
-            with open(csv_path, mode='r', encoding='utf-8-sig') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    territory_name = row.get("TERRITORIES_TO_MAP")
-                    iso_rto_value = row.get("ISO/RTO")
-                    
-                    if iso_rto_value == "PJM" and territory_name and territory_name.strip():
-                        cleaned_name = territory_name.strip()
-                        target_names.append(cleaned_name)
-                        logging.info(f"Extracted territory name: {cleaned_name}")
-        else:
+        if not os.path.exists(csv_path):
             logging.warning(f"CSV not found at {csv_path}")
             return {"type": "FeatureCollection", "features": []}
+
+        target_names = []
+        with open(csv_path, mode='r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                territory_name = row.get("TERRITORIES_TO_MAP")
+                iso_rto_value = row.get("ISO/RTO")
+                if iso_rto_value == "PJM" and territory_name and territory_name.strip():
+                    target_names.append(territory_name.strip())
+
+        logging.info(f"Loaded {len(target_names)} PJM territory names from CSV")
 
         logging.info(f"Target Names: {target_names}")
 
@@ -269,6 +266,55 @@ async def get_pjm_nodes():
             
     except Exception as e:
         print(f"Error fetching nodes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/service_territory_price_data")
+def get_service_territory_price_data(
+    startYear: int = Query(..., ge=2000, le=2100),
+    endYear: int = Query(..., ge=2000, le=2100),
+    months: Optional[str] = Query(None, description="Comma-separated months, 1-12"),
+    db: Session = Depends(get_db)
+):
+    if startYear > endYear:
+        raise HTTPException(status_code=400, detail="startYear must be less than or equal to endYear")
+
+    month_list = None
+    if months:
+        try:
+            month_list = [int(m.strip()) for m in months.split(',') if m.strip()]
+            if any(m < 1 or m > 12 for m in month_list):
+                raise ValueError
+        except ValueError:
+            raise HTTPException(status_code=400, detail="months must be comma-separated integers between 1 and 12")
+
+    try:
+        where_clause = "WHERE year >= :start_year AND year <= :end_year"
+        params = {"start_year": startYear, "end_year": endYear}
+
+        if month_list:
+            where_clause += " AND month IN :months"
+            params["months"] = tuple(month_list)
+
+        retail_query = text(f"SELECT utility AS service_territory, year, month, total AS retail_total, NULL::NUMERIC AS wholesale_price, 'retail' AS price_type FROM retail_monthly_rates_pjm {where_clause}")
+        wholesale_query = text(f"SELECT service_territory, year, month, NULL::NUMERIC AS retail_total, ws_price AS wholesale_price, 'wholesale' AS price_type FROM wholesale_month_price {where_clause}")
+
+        retail_rows = db.execute(retail_query, params).fetchall()
+        wholesale_rows = db.execute(wholesale_query, params).fetchall()
+
+        data = []
+        for row in retail_rows:
+            d = row._asdict(); d['year'] = int(d['year']); d['month'] = int(d['month']); d['retail_total'] = float(d['retail_total']) if d['retail_total'] is not None else None; d['wholesale_price']=None; data.append(d)
+        for row in wholesale_rows:
+            d = row._asdict(); d['year'] = int(d['year']); d['month'] = int(d['month']); d['wholesale_price'] = float(d['wholesale_price']) if d['wholesale_price'] is not None else None; d['retail_total']=None; data.append(d)
+
+        # Sort in a stable order for browser testing
+        data.sort(key=lambda x: (x['service_territory'] or '', x['year'], x['month'], x['price_type']))
+
+        return {"data": data, "count": len(data), "params": {"startYear": startYear, "endYear": endYear, "months": month_list}}
+
+    except Exception as e:
+        logging.exception("Error fetching service territory price data")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/utility_data/range")

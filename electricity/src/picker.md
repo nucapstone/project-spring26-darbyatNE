@@ -45,7 +45,17 @@ import { API_BASE_URL } from "../utils/config.js";
   
   picker.addEventListener('apply', (e) => {
     updateState(e);
-    window.location.href = '/index?fetch=true';
+
+    const fv = picker.value;
+    const url = new URL(window.location.origin + '/index');
+    url.searchParams.set('start_year', fv.startYear);
+    url.searchParams.set('end_year', fv.endYear);
+    if (fv.months && fv.months.length > 0 && fv.months.length < 12) {
+      url.searchParams.set('months', fv.months.join(','));
+    }
+    url.searchParams.set('fetch', 'true');
+
+    window.location.href = url.toString();
   });
 
   display(picker);
