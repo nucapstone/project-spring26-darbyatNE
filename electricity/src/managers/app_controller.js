@@ -1,6 +1,15 @@
 import maplibregl from "npm:maplibre-gl";
 import { API_BASE_URL } from "../utils/config.js";
-import { displayCurrentFilter } from "../components/ui.js";
+import { displayCurrentFilter, buildLegend } from "../components/ui.js"; // <-- Added buildLegend
+
+// ==========================================================================
+// 1. COLOR SCALES (10-Step Increments)
+// ==========================================================================
+const COLOR_SCALE = [
+    [0, '#313695'],   [20, '#4575b4'],  [40, '#74add1'],  [60, '#abd9e9'],
+    [80, '#ffffbf'],  [100, '#fee090'], [125, '#fdae61'], [150, '#f46d43'],
+    [200, '#d73027'], [300, '#a50026']
+];
 
 export class MapController {
     constructor(map, uiElements = {}) {
@@ -98,114 +107,171 @@ export class MapController {
         }
     }
 
-    calculateZonePrices() {
-        if (this.activePriceType === 'locational') return; // No math needed for locational view
+        toggleLayerVisibility(showRetail, showWholesale) {
+        if (!this.map) return;
 
-        this.zonePrices = {};
+        const retailVisibility = showRetail ? 'visible' : 'none';
+        const wholesaleVisibility = showWholesale ? 'visible' : 'none';
+
+        // 1. Toggle Retail (Shapes & Borders)
+        const retailLayers = [
+            'serviceTerritoryFill', 
+            'serviceTerritoryFill-3d', 
+            'serviceTerritoryLines', 
+            'serviceTerritoryLabels'
+        ];
+        
+        retailLayers.forEach(layer => {
+            if (this.map.getLayer(layer)) {
+                this.map.setLayoutProperty(layer, 'visibility', retailVisibility);
+            }
+        });
+
+        // 2. Toggle Wholesale (LMP Pins)
+        if (this.map.getLayer('retailLmpPinsLayer')) {
+            this.map.setLayoutProperty('retailLmpPinsLayer', 'visibility', wholesaleVisibility);
+        }
+    }
+    
+        calculateZonePrices() {
+        if (this.activePriceType === 'locational') return;
+
+        this.retailPrices = {};
+        this.wholesalePrices = {};
         const zoneAggregates = {};
 
-        // Group and sum the data by territory
+        // Group and sum BOTH retail and wholesale data by territory
         this.zoneData.forEach(row => {
             const zoneName = row.service_territory;
             if (!zoneName) return;
 
-            let price = this.activePriceType === 'wholesale' ? row.wholesale_price : row.retail_total;
+            if (!zoneAggregates[zoneName]) {
+                zoneAggregates[zoneName] = { 
+                    retailSum: 0, retailCount: 0, 
+                    wholesaleSum: 0, wholesaleCount: 0 
+                };
+            }
 
-            if (price !== null && price !== undefined) {
-                if (!zoneAggregates[zoneName]) {
-                    zoneAggregates[zoneName] = { sum: 0, count: 0 };
-                }
-                zoneAggregates[zoneName].sum += price;
-                zoneAggregates[zoneName].count += 1;
+            // Tally Retail
+            if (row.retail_price !== null && row.retail_price !== undefined) {
+                zoneAggregates[zoneName].retailSum += row.retail_price;
+                zoneAggregates[zoneName].retailCount += 1;
+            }
+            
+            // Tally Wholesale
+            if (row.wholesale_price !== null && row.wholesale_price !== undefined) {
+                zoneAggregates[zoneName].wholesaleSum += row.wholesale_price;
+                zoneAggregates[zoneName].wholesaleCount += 1;
             }
         });
 
-        // Calculate the average for the selected time period
-        const averagedPrices = {};
+        // Calculate the averages for the selected time period
         for (const [zone, data] of Object.entries(zoneAggregates)) {
-            averagedPrices[zone] = data.sum / data.count;
+            this.retailPrices[zone] = data.retailCount > 0 ? (data.retailSum / data.retailCount) : null;
+            this.wholesalePrices[zone] = data.wholesaleCount > 0 ? (data.wholesaleSum / data.wholesaleCount) : null;
         }
-
-        this.zonePrices = averagedPrices;
     }
 
     // ==========================================
     // RENDERING & VISUALS
     // ==========================================
 
-    renderData() {
+        renderData() {
         if (!this.map || !this.map.getSource('serviceTerritories')) return;
 
-        // --- 1. Handle Locational View ---
-        if (this.activePriceType === 'locational' && this.locationalColorExpression) {
-            this.map.setPaintProperty('serviceTerritoryFill', 'fill-color', this.locationalColorExpression);
-            if (this.map.getLayer('serviceTerritoryFill-3d')) {
-                this.map.setPaintProperty('serviceTerritoryFill-3d', 'fill-extrusion-color', this.locationalColorExpression);
+        // --- 1. Handle Locational View (Reset Colors) ---
+        if (this.activePriceType === 'locational') {
+            if (this.locationalColorExpression) {
+                // Reset Shapes
+                this.map.setPaintProperty('serviceTerritoryFill', 'fill-color', this.locationalColorExpression);
+                if (this.map.getLayer('serviceTerritoryFill-3d')) {
+                    this.map.setPaintProperty('serviceTerritoryFill-3d', 'fill-extrusion-color', this.locationalColorExpression);
+                }
+                
+                // Reset Pins (Reconstructs the match expression for pins using the shape colors)
+                if (this.map.getLayer('retailLmpPinsLayer')) {
+                    const pinLocationalColors = ['match', ['get', 'service_territory'], ...this.locationalColorExpression.slice(2)];
+                    this.map.setPaintProperty('retailLmpPinsLayer', 'circle-color', pinLocationalColors);
+                }
             }
-            
-            // Show the LMP pins in Locational View
-            if (this.map.getLayer('retailLmpPinsLayer')) {
-                this.map.setLayoutProperty('retailLmpPinsLayer', 'visibility', 'visible');
-            }
-            
             this.updateZoneBorders();
             return;
         }
 
         // --- 2. Handle Price Heatmap View ---
         
-        // Hide the LMP pins when looking at prices
-        if (this.map.getLayer('retailLmpPinsLayer')) {
-            this.map.setLayoutProperty('retailLmpPinsLayer', 'visibility', 'none');
-        }
-
-        const expression = ['match', ['get', 'Zone_Code']];
-        const values = Object.values(this.zonePrices);
+        // A. Color the Retail Shapes
+        const retailExpression = ['match', ['get', 'Zone_Code']];
+        let hasRetailData = false;
         
-        if (values.length === 0) {
-            this.map.setPaintProperty('serviceTerritoryFill', 'fill-color', '#ccc');
-            if (this.map.getLayer('serviceTerritoryFill-3d')) {
-                this.map.setPaintProperty('serviceTerritoryFill-3d', 'fill-extrusion-color', '#ccc');
+        for (const [zoneName, price] of Object.entries(this.retailPrices || {})) {
+            if (price !== null) {
+                retailExpression.push(zoneName, this.getColorForPrice(price));
+                hasRetailData = true;
             }
-            return;
+        }
+        retailExpression.push('#cccccc'); // Fallback color
+
+        if (hasRetailData) {
+            this.map.setPaintProperty('serviceTerritoryFill', 'fill-color', retailExpression);
+            if (this.map.getLayer('serviceTerritoryFill-3d')) {
+                this.map.setPaintProperty('serviceTerritoryFill-3d', 'fill-extrusion-color', retailExpression);
+            }
         }
 
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        
-        for (const [zoneName, price] of Object.entries(this.zonePrices)) {
-            expression.push(zoneName);
-            expression.push(this.getColorForPrice(price, min, max));
-        }
+        // B. Color the Wholesale Pins
+        if (this.map.getLayer('retailLmpPinsLayer')) {
+            const wholesaleExpression = ['match', ['get', 'service_territory']];
+            let hasWholesaleData = false;
+            
+            for (const [zoneName, price] of Object.entries(this.wholesalePrices || {})) {
+                if (price !== null) {
+                    wholesaleExpression.push(zoneName, this.getColorForPrice(price));
+                    hasWholesaleData = true;
+                }
+            }
+            wholesaleExpression.push('#ffffff'); // Fallback color for pins with no data
 
-        expression.push('#ccc'); // Fallback
-
-        this.map.setPaintProperty('serviceTerritoryFill', 'fill-color', expression);
-        if (this.map.getLayer('serviceTerritoryFill-3d')) {
-            this.map.setPaintProperty('serviceTerritoryFill-3d', 'fill-extrusion-color', expression);
+            if (hasWholesaleData) {
+                this.map.setPaintProperty('retailLmpPinsLayer', 'circle-color', wholesaleExpression);
+            }
         }
         
         this.updateZoneBorders();
     }
 
-    getColorForPrice(price, min, max) {
-        if (price < 0) return '#4575b4'; 
-        if (min === max) return '#fdae61'; 
-
-        const ratio = (price - min) / (max - min);
-
-        // Smooth gradient from Light Yellow to Dark Red
-        if (ratio < 0.2) return '#ffffb2';
-        if (ratio < 0.4) return '#fecc5c';
-        if (ratio < 0.6) return '#fd8d3c';
-        if (ratio < 0.8) return '#f03b20';
-        return '#bd0026'; 
+    getColorForPrice(price) {
+        // Iterate through the 10-step scale. First one it's less than or equal to, it uses.
+        for (let i = 0; i < COLOR_SCALE.length; i++) {
+            if (price <= COLOR_SCALE[i][0]) {
+                return COLOR_SCALE[i][1];
+            }
+        }
+        // If it's higher than the max limit ($300+), return the darkest red
+        return COLOR_SCALE[COLOR_SCALE.length - 1][1];
     }
 
     setPriceType(type) {
         this.activePriceType = type;
         this.calculateZonePrices();
         this.renderData();
+
+        // --- Handle Legend Updates ---
+        const legendBox = document.getElementById('legend');
+        
+        if (type === 'locational') {
+            if (legendBox) legendBox.style.display = 'none';
+        } else {
+            if (legendBox) legendBox.style.display = 'block';
+            
+            // Dynamically set the title based on the view
+            const title = type === 'wholesale' ? "Wholesale Price ($/MWh)" : "Retail Price ($/MWh)";
+            
+            // Call the UI builder to draw the 10-step legend
+            if (typeof buildLegend === 'function') {
+                buildLegend(COLOR_SCALE, title);
+            }
+        }
     }
 
     renderCurrentView() {
@@ -247,7 +313,6 @@ export class MapController {
     }
 
     handleMouseMove(e) {
-        // NEW: If we are in Locational View, don't show the territory popup at all
         if (this.activePriceType === 'locational') {
             this.map.getCanvas().style.cursor = '';
             this.popup.remove();
@@ -282,7 +347,7 @@ export class MapController {
         
         let label = 'View';
         if (priceType === 'locational') label = 'Locational View';
-        else if (priceType === 'retail') label = 'Retail Price';
+        else if (priceType === 'retail' || priceType === 'price') label = 'Retail Price';
         else if (priceType === 'wholesale') label = 'Wholesale Price';
 
         const priceDisplay = priceType === 'locational' 
@@ -330,9 +395,7 @@ export class MapController {
     runAnimation() {
         if (this.animationTimer) clearInterval(this.animationTimer);
         this.animationTimer = setInterval(() => {
-            // Increment time step logic here
             this.currentTimeIndex++;
-            // Loop back if needed, or stop
             this.renderTimeStep(this.currentTimeIndex);
             
             if (this.ui.slider) {
@@ -343,22 +406,18 @@ export class MapController {
 
     renderTimeStep(index) {
         this.currentTimeIndex = index;
-        // Add your specific time-step rendering logic here
-        // e.g., filtering this.zoneData by the specific hour/day
         this.renderData();
     }
 
     renderAverageView() {
-        // Resets view to the averaged data
         this.calculateZonePrices();
         this.renderData();
     }
 
     setPlaybackSpeed(speed) {
-        // Assuming speed slider gives a value where higher is faster, or just milliseconds
         this.playbackSpeed = speed;
         if (this.isPlaying) {
-            this.runAnimation(); // restart interval with new speed
+            this.runAnimation(); 
         }
     }
 }

@@ -1,7 +1,6 @@
 import os
 import json
 import csv
-import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Query
@@ -13,11 +12,8 @@ from typing import Optional, List, Any
 import ast
 import collections
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 load_dotenv()
 app = FastAPI()
-
 
 origins = [
     "http://localhost",
@@ -67,14 +63,12 @@ class UtilityDataRequest(BaseModel):
 
 @app.get("/api/service-terr")
 def get_service_territories(db: Session = Depends(get_db)):
-    logging.info("Received request for service territories.")
     try:
         # PATH TO CSV
         base_dir = os.path.dirname(os.path.abspath(__file__))
         csv_path = os.path.join(base_dir, "..", "src", "hydrate", "retail", "utility_names.csv")
         
         if not os.path.exists(csv_path):
-            logging.warning(f"CSV not found at {csv_path}")
             return {"type": "FeatureCollection", "features": []}
 
         target_names = []
@@ -86,12 +80,7 @@ def get_service_territories(db: Session = Depends(get_db)):
                 if iso_rto_value == "PJM" and territory_name and territory_name.strip():
                     target_names.append(territory_name.strip())
 
-        logging.info(f"Loaded {len(target_names)} PJM territory names from CSV")
-
-        logging.info(f"Target Names: {target_names}")
-
         if not target_names:
-            logging.info("No valid target names found in the CSV.")
             return {"type": "FeatureCollection", "features": []}
 
         query = text("""
@@ -103,7 +92,6 @@ def get_service_territories(db: Session = Depends(get_db)):
             WHERE name = ANY(:names)
         """)
         
-        logging.info(f"Executing SQL query with target names: {target_names}")
         result = db.execute(query, {"names": target_names})
         
         features = []
@@ -120,14 +108,12 @@ def get_service_territories(db: Session = Depends(get_db)):
             }
             features.append(feature)
 
-        logging.info(f"Number of features found: {len(features)}")
         return {
             "type": "FeatureCollection", 
             "features": features
         }
 
     except Exception as e:
-        logging.exception("Server Error in get_service_territories")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/zones")
@@ -163,7 +149,6 @@ def get_zones(db: Session = Depends(get_db)):
         return {"type": "FeatureCollection", "features": features}
         
     except Exception as e:
-        print(f"Server Error in get_zones: {e}")
         return {"type": "FeatureCollection", "features": []}
 
 @app.post("/api/lmp/range")
@@ -230,45 +215,46 @@ def get_lmp_data_for_range(query: LmpRangeQuery, db: Session = Depends(get_db)):
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Please use YYYY-MM-DD.")
     except Exception as e:
-        print(f"Server Error in get_lmp_data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-db: Session = Depends(get_db)
-
 @app.get("/api/nodes")
-async def get_pjm_nodes():
+async def get_pjm_nodes(db: Session = Depends(get_db)):
     """
     Fetches all PJM Nodes with location data.
     Used for mapping individual LMPs to physical coordinates.
     """
     try:
-        with get_db() as db:
-            query = """
-                SELECT pnode_id, alt_name, latitude, longitude 
-                FROM pjm_lat_long 
-                WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-            """
-            result = db.execute(query)
-            rows = result.fetchall()
-            
-            # Convert to list of dicts
-            nodes = [
-                {
-                    "pnode_id": row[0],
-                    "name": row[1],
-                    "lat": float(row[2]),
-                    "lon": float(row[3])
-                } 
-                for row in rows
-            ]
-            
-            return {"nodes": nodes, "count": len(nodes)}
+        query = """
+            SELECT pnode_id, alt_name, latitude, longitude 
+            FROM pjm_lat_long 
+            WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+        """
+        result = db.execute(text(query))
+        rows = result.fetchall()
+        
+        # Convert to list of dicts
+        nodes = [
+            {
+                "pnode_id": row[0],
+                "name": row[1],
+                "lat": float(row[2]),
+                "lon": float(row[3])
+            } 
+            for row in rows
+        ]
+        
+        return {"nodes": nodes, "count": len(nodes)}
             
     except Exception as e:
-        print(f"Error fetching nodes: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
+from fastapi import APIRouter, Query, HTTPException, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from typing import Optional
+
+# Assuming @app and get_db are defined elsewhere in your file
 @app.get("/api/service_territory_price_data")
 def get_service_territory_price_data(
     startYear: int = Query(..., ge=2000, le=2100),
@@ -289,32 +275,65 @@ def get_service_territory_price_data(
             raise HTTPException(status_code=400, detail="months must be comma-separated integers between 1 and 12")
 
     try:
-        where_clause = "WHERE year >= :start_year AND year <= :end_year"
+        # 1. Build the dynamic SQL query using the FULL OUTER JOIN logic
+        base_query = """
+            SELECT 
+                COALESCE(r.utility, w.service_territory) AS service_territory,
+                COALESCE(r.year, w.year) AS year,
+                COALESCE(r.month, w.month) AS month,
+                r.total AS retail_price,
+                w.ws_price/1000 AS wholesale_price
+            FROM public.retail_monthly_rates_pjm r
+            FULL OUTER JOIN wholesale_month_price w
+                ON r.utility = w.service_territory
+                AND r.year = w.year
+                AND r.month = w.month
+            WHERE COALESCE(r.year, w.year) >= :start_year 
+              AND COALESCE(r.year, w.year) <= :end_year
+              AND COALESCE(r.utility, w.service_territory) IN (
+                  SELECT DISTINCT service_territory 
+                  FROM wholesale_month_price
+              )
+        """
+        
         params = {"start_year": startYear, "end_year": endYear}
 
+        # 2. Append the month filter if provided
         if month_list:
-            where_clause += " AND month IN :months"
+            base_query += " AND COALESCE(r.month, w.month) IN :months"
             params["months"] = tuple(month_list)
 
-        retail_query = text(f"SELECT utility AS service_territory, year, month, total AS retail_total, NULL::NUMERIC AS wholesale_price, 'retail' AS price_type FROM retail_monthly_rates_pjm {where_clause}")
-        wholesale_query = text(f"SELECT service_territory, year, month, NULL::NUMERIC AS retail_total, ws_price AS wholesale_price, 'wholesale' AS price_type FROM wholesale_month_price {where_clause}")
+        # 3. Add the sorting logic directly to the SQL
+        base_query += " ORDER BY service_territory, year, month;"
 
-        retail_rows = db.execute(retail_query, params).fetchall()
-        wholesale_rows = db.execute(wholesale_query, params).fetchall()
+        # 4. Execute the unified query
+        result = db.execute(text(base_query), params).fetchall()
 
+        # 5. Format the data for the JSON response
         data = []
-        for row in retail_rows:
-            d = row._asdict(); d['year'] = int(d['year']); d['month'] = int(d['month']); d['retail_total'] = float(d['retail_total']) if d['retail_total'] is not None else None; d['wholesale_price']=None; data.append(d)
-        for row in wholesale_rows:
-            d = row._asdict(); d['year'] = int(d['year']); d['month'] = int(d['month']); d['wholesale_price'] = float(d['wholesale_price']) if d['wholesale_price'] is not None else None; d['retail_total']=None; data.append(d)
+        for row in result:
+            # Handle SQLAlchemy row mapping (compatible with SQLAlchemy 1.4 and 2.0)
+            row_dict = dict(row._mapping) if hasattr(row, '_mapping') else row._asdict()
+            
+            data.append({
+                "service_territory": row_dict["service_territory"],
+                "year": int(row_dict["year"]),
+                "month": int(row_dict["month"]),
+                "retail_price": float(row_dict["retail_price"]) if row_dict["retail_price"] is not None else None,
+                "wholesale_price": float(row_dict["wholesale_price"]) if row_dict["wholesale_price"] is not None else None
+            })
 
-        # Sort in a stable order for browser testing
-        data.sort(key=lambda x: (x['service_territory'] or '', x['year'], x['month'], x['price_type']))
-
-        return {"data": data, "count": len(data), "params": {"startYear": startYear, "endYear": endYear, "months": month_list}}
+        return {
+            "data": data, 
+            "count": len(data), 
+            "params": {
+                "startYear": startYear, 
+                "endYear": endYear, 
+                "months": month_list
+            }
+        }
 
     except Exception as e:
-        logging.exception("Error fetching service territory price data")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/utility_data/range")
@@ -338,8 +357,6 @@ def get_utility_data_for_range(
         raise HTTPException(status_code=400, detail="Start year must be less than or equal to end year.")
 
     try:
-        logging.info(f"Received request for utility data with startYear={startYear}, endYear={endYear}, month={month_list}")
-
         # Base query
         query_str = """
             SELECT
@@ -360,9 +377,6 @@ def get_utility_data_for_range(
 
         # Prepare the final query
         query = text(query_str)
-
-        # Log the query and parameters
-        logging.info(f"Executing query: {query_str} with params: {{'start_year': {startYear}, 'end_year': {endYear}}}")
 
         # Execute the query
         results = db.execute(query, {
@@ -385,7 +399,6 @@ def get_utility_data_for_range(
         return {"data": data}
 
     except Exception as e:
-        logging.exception("Internal server error occurred during utility data retrieval")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/retail_lmps")
@@ -393,8 +406,6 @@ def get_retail_lmps_data(
     db: Session = Depends(get_db)
 ):
     try:
-        logging.info("Fetching all retail_lmps")
-        
         # 1. Base Query: Select ALL columns with no filters
         sql = "SELECT * FROM retail_lmps"
         params = {}
@@ -408,5 +419,4 @@ def get_retail_lmps_data(
         return {"data": data, "count": len(data)}
 
     except Exception as e:
-        logging.error(f"Error fetching retail_lmps: {e}")
         raise HTTPException(status_code=500, detail=str(e))

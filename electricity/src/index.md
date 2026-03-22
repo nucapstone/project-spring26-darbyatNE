@@ -61,11 +61,11 @@ pager: false
     <div class="price-selector" style="display: flex; align-items: center; gap: 10px;">
         <span class="price-label" style="font-weight: bold; color: #555; font-size: 14px;">Price Type &rarr;</span>
         <div style="display: flex; align-items: center; gap: 5px;">
-            <input type="radio" id="price-retail" name="price-type" value="retail" checked style="cursor: pointer;">
+            <input type="checkbox" id="price-retail" name="price-type" value="retail" checked style="cursor: pointer;">
             <label for="price-retail" style="cursor: pointer; font-size: 14px;">Retail</label>
         </div>
         <div style="display: flex; align-items: center; gap: 5px;">
-            <input type="radio" id="price-wholesale" name="price-type" value="wholesale" style="cursor: pointer;">
+            <input type="checkbox" id="price-wholesale" name="price-type" value="wholesale" checked style="cursor: pointer;">
             <label for="price-wholesale" style="cursor: pointer; font-size: 14px;">Wholesale</label>
         </div>
     </div>

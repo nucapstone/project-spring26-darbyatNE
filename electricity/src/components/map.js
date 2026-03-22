@@ -330,64 +330,81 @@ export function initApp() {
         } catch (e) { console.error("Map Load Error", e); }
     });
 
-    // 4. Bind DOM Controls
+    // 4. Bind DOM Controls (Layer Toggles & View Mode)
     const priceSelectorBox = document.querySelector('.price-selector'); 
+    const legendBox = document.getElementById('legend'); 
+    const priceLabel = document.querySelector('.price-label'); 
     
-    if (priceSelectorBox) {
-        // 1. Master Toggle: Clicking the box itself
-        priceSelectorBox.addEventListener('click', (e) => {
-            // If they clicked a radio button or its label directly, let the 'change' event handle it
-            if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'label') return;
+    // Remove master highlight box and hide legend on load
+    if (priceSelectorBox) priceSelectorBox.classList.remove('highlighted');
+    if (legendBox) legendBox.style.display = 'none';
 
-            const isCurrentlyOn = priceSelectorBox.classList.contains('highlighted');
+    // --- A. Master View Toggle (Clicking the Text Label) ---
+    if (priceLabel) {
+        // Start by displaying "Locational View" since that's the default map state
+        priceLabel.innerHTML = 'Locational View &rarr;';
+        priceLabel.style.cursor = 'pointer';
+        priceLabel.style.padding = '4px 8px';
+        priceLabel.style.borderRadius = '4px';
+        priceLabel.style.transition = 'background 0.2s';
+        
+        // Hover effect to make it feel clickable
+        priceLabel.onmouseenter = () => priceLabel.style.background = '#e9ecef';
+        priceLabel.onmouseleave = () => priceLabel.style.background = 'transparent';
+
+        priceLabel.addEventListener('click', (e) => {
+            e.stopPropagation();
             
-            if (isCurrentlyOn) {
-                // TURN OFF -> Switch to Locational View
-                priceSelectorBox.classList.remove('highlighted');
-                controller.setPriceType('locational');
-                
-                // If you have a 'locational' radio button, visually check it
-                const locationalRadio = priceSelectorBox.querySelector('input[value="locational"]');
-                if (locationalRadio) locationalRadio.checked = true;
-                
+            // Check if the label currently says Locational View
+            const isLocational = priceLabel.innerHTML.includes('Locational View');
+            
+            if (isLocational) {
+                // SWITCHING TO PRICE VIEW
+                priceLabel.innerHTML = 'Price View &rarr;';
+                if (legendBox) legendBox.style.display = 'block';
+                buildLegend(COLOR_SCALE, "Retail Price ($/MWh)"); 
+                controller.setPriceType('retail'); // Triggers the heatmap
             } else {
-                // TURN ON -> Switch to Pricing View
-                priceSelectorBox.classList.add('highlighted');
-                
-                // Find which pricing radio is checked (ignore locational)
-                let targetRadio = priceSelectorBox.querySelector('input[type="radio"]:checked:not([value="locational"])');
-                
-                // If no price radio is selected, default to 'retail'
-                if (!targetRadio) {
-                    targetRadio = priceSelectorBox.querySelector('input[value="retail"]');
-                    if (targetRadio) targetRadio.checked = true;
-                }
-                
-                const priceType = targetRadio ? targetRadio.value : 'retail';
-                
-                buildLegend((priceType === 'net' || priceType === 'congestion') ? NET_COLOR_SCALE : COLOR_SCALE);
-                controller.setPriceType(priceType);
-            }
-        });
-
-        // 2. Existing Behavior: Clicking the radio buttons directly
-        priceSelectorBox.addEventListener('change', (e) => {
-            if (e.target.type === 'radio') {
-                const priceType = e.target.value;
-                
-                // Sync the box highlight state with the radio choice
-                if (priceType === 'locational') {
-                    priceSelectorBox.classList.remove('highlighted');
-                } else {
-                    priceSelectorBox.classList.add('highlighted');
-                    buildLegend((priceType === 'net' || priceType === 'congestion') ? NET_COLOR_SCALE : COLOR_SCALE);
-                }
-                
-                controller.setPriceType(priceType);
+                // SWITCHING BACK TO LOCATIONAL VIEW
+                priceLabel.innerHTML = 'Locational View &rarr;';
+                if (legendBox) legendBox.style.display = 'none';
+                controller.setPriceType('locational'); // Resets to default colors
             }
         });
     }
 
+    // --- B. Independent Layer Toggles (Retail = Shapes, Wholesale = Pins) ---
+    const retailInput = document.getElementById('price-retail');
+    const wholesaleInput = document.getElementById('price-wholesale');
+
+    const updateCheckboxStyles = () => {
+        const retailLabel = document.querySelector('label[for="price-retail"]');
+        const wholesaleLabel = document.querySelector('label[for="price-wholesale"]');
+        
+        // Highlight in blue when active
+        if (retailLabel && retailInput) {
+            retailLabel.style.color = retailInput.checked ? '#007bff' : '#555';
+            retailLabel.style.fontWeight = retailInput.checked ? 'bold' : 'normal';
+        }
+        if (wholesaleLabel && wholesaleInput) {
+            wholesaleLabel.style.color = wholesaleInput.checked ? '#007bff' : '#555';
+            wholesaleLabel.style.fontWeight = wholesaleInput.checked ? 'bold' : 'normal';
+        }
+    };
+
+    const handleLayerToggle = () => {
+        updateCheckboxStyles();
+        const showRetail = retailInput ? retailInput.checked : true;
+        const showWholesale = wholesaleInput ? wholesaleInput.checked : true;
+        
+        // Tell the controller to show/hide the specific map layers
+        controller.toggleLayerVisibility(showRetail, showWholesale);
+    };
+
+    // Initialize styles and listeners
+    updateCheckboxStyles();
+    if (retailInput) retailInput.addEventListener('change', handleLayerToggle);
+    if (wholesaleInput) wholesaleInput.addEventListener('change', handleLayerToggle);
 
     // Play Button
     const playBtn = document.getElementById('play-btn');

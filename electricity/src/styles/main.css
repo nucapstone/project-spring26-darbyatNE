@@ -8,7 +8,7 @@
 }
 
 body {
-  overflow: hidden !important; /* Prevents scrollbars on the main window */
+  overflow: hidden !important; /* scrollbars control*/
   height: 90vh !important;
 }
 
@@ -58,7 +58,6 @@ body {
   font-size: 13px;
   font-weight: 500;
   color: #333;
-  /* Match this color to your .filter-container background */
   background-color: #f0f0f0; 
   margin-right: 5px;
 }
@@ -131,12 +130,12 @@ body {
   overflow: hidden; 
   border: 1px solid #aaa; 
   flex-shrink: 0; 
-  cursor: pointer;           /* NEW: Makes the whole box clickable */
-  transition: all 0.3s ease; /* NEW: Smooth transition */
-  background: #f0f0f0;       /* Base background color */
+  cursor: pointer;           /* Makes the whole box clickable */
+  transition: all 0.3s ease; 
+  background: #f0f0f0;      
 }
 
-/* NEW: Highlighted state (On / Pricing) */
+/* Highlighted state (On / Pricing) */
 .price-selector.highlighted {
   background-color: #f0f8ff; 
   border: 2px solid #007bff; 
@@ -148,7 +147,7 @@ body {
 .price-selector label {
   padding: 8px 16px; 
   cursor: pointer; 
-  background: transparent;   /* Let the container background show through */
+  background: transparent;
   user-select: none;
   transition: background 0.2s; 
   font-size: 14px; 
@@ -332,11 +331,11 @@ input#price-cong:checked + label {
 
 /* UPDATED: Zone Section expands to fill the whole sidebar */
 #zone-section { 
-  width: 100%;          /* Changed from 130px to 100% */
+  width: 100%;          
   display: flex; 
   flex-direction: column; 
   overflow: hidden; 
-  border-right: none;   /* Removed border since it's now the only item */
+  border-right: none;   
 }
 
 /* UPDATED: Hide Constraint Section */

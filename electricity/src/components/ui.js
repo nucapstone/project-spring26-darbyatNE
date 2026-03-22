@@ -80,24 +80,46 @@ export function displayCurrentFilter(filter, statusOverride = null) {
   `;
 }
 
-export function buildLegend() {
-    const legendContainer = document.getElementById('map-legend');
+export function buildLegend(colorScale, title = "Price ($/MWh)") {
+    // Note: Make sure your HTML has an element with id="legend" (or change this to 'map-legend' if that's what you are using)
+    const legendContainer = document.getElementById('legend');
     if (!legendContainer) return;
 
-    legendContainer.innerHTML = `
+    let html = `
         <div style="background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-family: sans-serif; font-size: 12px;">
-            <div style="font-weight: bold; margin-bottom: 5px; text-align: center;">LMP Price ($/MWh)</div>
-            <div style="display: flex; align-items: center; justify-content: center;">
-                <span style="margin-right: 8px; font-weight: 500;">Low</span>
-                <div style="
-                    width: 120px; 
-                    height: 12px; 
-                    background: linear-gradient(90deg, #4575b4 0%, #ffffbf 50%, #d73027 100%); 
-                    border: 1px solid #ccc;
-                    border-radius: 2px;
-                "></div>
-                <span style="margin-left: 8px; font-weight: 500;">High</span>
+            <div style="font-weight: bold; margin-bottom: 8px; font-size: 13px; text-align: center;">${title}</div>
+            <div style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
+    `;
+
+    // Loop through every increment in the color scale array
+    colorScale.forEach((step, index) => {
+        const value = Array.isArray(step) ? step[0] : step.value;
+        const color = Array.isArray(step) ? step[1] : step.color;
+
+        let label = '';
+
+        // Format the text based on where we are in the list
+        if (index === colorScale.length - 1) {
+            label = `$${value}+`;
+        } else {
+            const nextStep = colorScale[index + 1];
+            const nextValue = Array.isArray(nextStep) ? nextStep[0] : nextStep.value;
+            label = `$${value} to $${nextValue}`;
+        }
+
+        // Add the color box and label to the HTML
+        html += `
+            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                <span style="background-color: ${color}; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border: 1px solid #ccc; border-radius: 2px;"></span>
+                <span style="font-size: 11px; white-space: nowrap;">${label}</span>
+            </div>
+        `;
+    });
+
+    html += `
             </div>
         </div>
     `;
+
+    legendContainer.innerHTML = html;
 }
