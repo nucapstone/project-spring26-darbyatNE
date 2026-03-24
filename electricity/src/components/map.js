@@ -14,8 +14,8 @@ export function initApp() {
     // 1. Initialize Map
     const map = new maplibregl.Map({
         container: "map",
-        zoom: 5,
-        center: [-85, 38.6],
+        zoom: 5.4,
+        center: [-82, 38.9],
         pitch: 0, // Start Flat (2D)
         hash: true,
         style: 'https://api.maptiler.com/maps/streets/style.json?key=eDHUbUTyNqfZvtDLiUCT',
@@ -209,7 +209,11 @@ export function initApp() {
             }, 'serviceTerritoryLabels');
 
             // Add hover popup for pins
-            const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+            const popup = new maplibregl.Popup({ 
+                closeButton: false, 
+                closeOnClick: false,
+                offset: [0, 10] // Position popup below the cursor to avoid overlap
+            });
 
             map.on('mouseenter', 'retailLmpPinsLayer', (e) => {
                 map.getCanvas().style.cursor = 'pointer';
@@ -244,7 +248,7 @@ export function initApp() {
             // Update Zone List (Sidebar)
             const zoneListEl = document.getElementById('zone-list');
             const zones = [
-                { name: "PJM", center: [-85, 38.6] }, 
+                { name: "PJM", center: [-82, 38.9] }, 
                 ...shapes.features.map(f => ({ name: f.properties.Zone_Code, center: d3.geoCentroid(f) })).sort((a, b) => a.name.localeCompare(b.name))
             ];
             
@@ -263,7 +267,7 @@ export function initApp() {
                     if (zData) {
                         if (zData.name === 'PJM') {
                             const is3D = map.getPitch() > 10;
-                            map.flyTo({ center: zData.center, zoom: 5, pitch: is3D ? 30 : 0, bearing: is3D ? -2 : 0, essential: true });
+                            map.flyTo({ center: zData.center, zoom: 5.4, pitch: is3D ? 30 : 0, bearing: is3D ? -2 : 0, essential: true });
                             controller.selectedZoneName = null;
                             map.setFilter('serviceTerritoryLines-selected', ['==', 'Zone_Code', '']);
                         } else {

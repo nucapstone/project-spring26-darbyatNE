@@ -87,10 +87,9 @@ export function buildLegend(retailScale, wholesaleScale, title = "Price ($/MWh)"
     let html = `
         <div style="background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-family: sans-serif; font-size: 12px;">
             <div style="font-weight: bold; margin-bottom: 8px; font-size: 13px; text-align: center;">${title}</div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">
-                <span style="font-size: 10px; font-weight: bold; color: #0066cc; flex: 1; text-align: right;">Retail</span>
-                <span style="flex-shrink: 0; width: 15px;"></span>
-                <span style="font-size: 10px; font-weight: bold; color: #cc6600; flex: 1; text-align: left;">Wholesale</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px; font-size: 10px; color: #000;">
+                <span style="font-weight: bold; color: #000;">Retail (Territory Shapes)</span>
+                <span style="font-weight: bold; color: #000;">Wholesale (LMP Points)</span>
             </div>
             <div style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
     `;

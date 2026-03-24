@@ -371,12 +371,19 @@ export class MapController {
             this.map.getCanvas().style.cursor = 'pointer';
             
             const zoneName = features[0].properties.Zone_Code;
-            const price = this.zonePrices[zoneName] !== undefined ? this.zonePrices[zoneName] : null;
+            // Use the appropriate price data based on active price type
+            let price = null;
+            if (this.activePriceType === 'retail' && this.retailPrices) {
+                price = this.retailPrices[zoneName];
+            } else if (this.activePriceType === 'wholesale' && this.wholesalePrices) {
+                price = this.wholesalePrices[zoneName];
+            }
 
             const html = this.createZonePopupHTML(zoneName, this.activePriceType, price);
             
             this.popup
                 .setLngLat(e.lngLat)
+                .setOffset([0, -10]) // Position popup above the cursor
                 .setHTML(html)
                 .addTo(this.map);
         } else {
