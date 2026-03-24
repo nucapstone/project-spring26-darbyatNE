@@ -14,6 +14,9 @@ export class MapController {
         // Data State
         this.zoneData = [];
         this.zonePrices = {}; 
+        this.monthlyFrames = [];
+        this.retailPrices = {};
+        this.wholesalePrices = {};
         
         // Filter & View State
         this.currentFilter = {};
@@ -26,6 +29,7 @@ export class MapController {
         this.animationTimer = null;
         this.playbackSpeed = 1000; 
         this.currentTimeIndex = 0;
+        this.showAverageView = true;
         this.contourLayer = null; 
     }
 
@@ -81,9 +85,20 @@ export class MapController {
             
             const result = await response.json();
             this.zoneData = result.data || []; 
-            
+
+            // Diagnostic: Log what the API returned
+            const uniqueMonths = new Set();
+            this.zoneData.forEach(row => {
+                uniqueMonths.add(`${row.year}-${String(row.month).padStart(2, '0')}`);
+            });
+            console.log(`📡 API Response: ${this.zoneData.length} rows`);
+            console.log(`   Request params:`, result.params);
+            console.log(`   Unique month-year combos: ${Array.from(uniqueMonths).sort().join(', ')}`);
+
+            this.buildMonthlyFrames();
             this.calculateZonePrices();
-            this.renderData();
+            this.configureTimeControls();
+            this.renderAverageView();
             
             if (typeof displayCurrentFilter === 'function') {
                 displayCurrentFilter(filter);
@@ -95,8 +110,69 @@ export class MapController {
                 displayCurrentFilter(filter, "Error loading data");
             }
             this.zoneData = [];
+            this.monthlyFrames = [];
+            this.configureTimeControls();
             this.renderData();
         }
+    }
+
+    buildMonthlyFrames() {
+        const frameMap = new Map();
+
+        for (const row of this.zoneData) {
+            const year = Number(row.year);
+            const month = Number(row.month);
+            const zoneName = row.service_territory ? row.service_territory.trim().toUpperCase() : null;
+
+            if (!zoneName || Number.isNaN(year) || Number.isNaN(month)) continue;
+
+            const key = `${year}-${String(month).padStart(2, '0')}`;
+            if (!frameMap.has(key)) {
+                frameMap.set(key, {
+                    key,
+                    year,
+                    month,
+                    label: this.formatMonthLabel(year, month),
+                    retailPrices: {},
+                    wholesalePrices: {}
+                });
+            }
+
+            const frame = frameMap.get(key);
+            frame.retailPrices[zoneName] = row.retail_price ?? null;
+            frame.wholesalePrices[zoneName] = row.wholesale_price ?? null;
+        }
+
+        this.monthlyFrames = Array.from(frameMap.values()).sort((a, b) => {
+            if (a.year !== b.year) return a.year - b.year;
+            return a.month - b.month;
+        });
+
+        // Diagnostic: Log which months are present
+        const monthsFound = this.monthlyFrames.map(f => `${f.year}-${String(f.month).padStart(2, '0')}`);
+        console.log(`🎬 Monthly Frames Built: ${this.monthlyFrames.length} months`);
+        console.log(`   First month: ${this.monthlyFrames[0]?.label}`);
+        console.log(`   Last month: ${this.monthlyFrames[this.monthlyFrames.length - 1]?.label}`);
+        console.log(`   Months present: ${monthsFound.join(', ')}`);
+
+        this.currentTimeIndex = 0;
+    }
+
+    configureTimeControls() {
+        if (!this.ui.slider) return;
+
+        if (this.monthlyFrames.length === 0) {
+            this.ui.slider.min = 0;
+            this.ui.slider.max = 0;
+            this.ui.slider.value = 0;
+            this.updateTimeDisplay('Ready');
+            return;
+        }
+
+        this.ui.slider.min = 0;
+        this.ui.slider.max = Math.max(this.monthlyFrames.length - 1, 0);
+        this.ui.slider.value = this.currentTimeIndex;
+        this.updateTimeDisplay(this.monthlyFrames[this.currentTimeIndex].label);
     }
 
     toggleLayerVisibility(showRetail, showWholesale) {
@@ -124,8 +200,6 @@ export class MapController {
     }
     
     calculateZonePrices() {
-        if (this.activePriceType === 'locational') return;
-
         this.retailPrices = {};
         this.wholesalePrices = {};
         const zoneAggregates = {};
@@ -176,6 +250,20 @@ export class MapController {
         console.log("📊 Wholesale Prices (¢/kWh):", this.wholesalePrices);
     }
 
+    getCurrentRetailPrices() {
+        if (!this.showAverageView && this.monthlyFrames[this.currentTimeIndex]) {
+            return this.monthlyFrames[this.currentTimeIndex].retailPrices;
+        }
+        return this.retailPrices || {};
+    }
+
+    getCurrentWholesalePrices() {
+        if (!this.showAverageView && this.monthlyFrames[this.currentTimeIndex]) {
+            return this.monthlyFrames[this.currentTimeIndex].wholesalePrices;
+        }
+        return this.wholesalePrices || {};
+    }
+
     // ==========================================
     // RENDERING & VISUALS
     // ==========================================
@@ -196,6 +284,9 @@ export class MapController {
                 }
             }
             this.updateZoneBorders();
+            if (typeof window.refreshZoneListColors === 'function') {
+                window.refreshZoneListColors();
+            }
             return;
         }
 
@@ -204,7 +295,7 @@ export class MapController {
         let hasRetailData = false;
         let matchedRetailZones = [];
         
-        for (const [zoneName, price] of Object.entries(this.retailPrices || {})) {
+        for (const [zoneName, price] of Object.entries(this.getCurrentRetailPrices())) {
             if (price !== null) {
                 retailExpression.push(zoneName, this.getColorForPrice(price, 'retail'));
                 hasRetailData = true;
@@ -231,7 +322,7 @@ export class MapController {
             let hasWholesaleData = false;
             let matchedWholesaleZones = [];
             
-            for (const [zoneName, price] of Object.entries(this.wholesalePrices || {})) {
+            for (const [zoneName, price] of Object.entries(this.getCurrentWholesalePrices())) {
                 if (price !== null) {
                     wholesaleExpression.push(zoneName, this.getColorForPrice(price, 'wholesale'));
                     hasWholesaleData = true;
@@ -251,6 +342,9 @@ export class MapController {
         }
         
         this.updateZoneBorders();
+        if (typeof window.refreshZoneListColors === 'function') {
+            window.refreshZoneListColors();
+        }
     }
 
     // 4. Updated to handle the new object-based scales
@@ -277,10 +371,8 @@ export class MapController {
             const source = this.map.getSource('serviceTerritories');
             const features = source._data?.features || [];
             const mapZones = new Set(features.map(f => f.properties.Zone_Code).filter(Boolean));
-            const priceZones = new Set(
-                Object.keys(type === 'wholesale' ? (this.wholesalePrices || {}) : (this.retailPrices || {}))
-                    .filter(z => (type === 'wholesale' ? this.wholesalePrices[z] : this.retailPrices[z]) !== null)
-            );
+            const activePrices = type === 'wholesale' ? this.getCurrentWholesalePrices() : this.getCurrentRetailPrices();
+            const priceZones = new Set(Object.keys(activePrices).filter(z => activePrices[z] !== null));
             
             const matched = [...mapZones].filter(z => priceZones.has(z));
             const unmatched = [...mapZones].filter(z => !priceZones.has(z));
@@ -421,11 +513,18 @@ export class MapController {
     // ==========================================
 
     togglePlay() {
+        if (this.monthlyFrames.length === 0) {
+            this.updateTimeDisplay('No monthly data');
+            return;
+        }
+
         this.isPlaying = !this.isPlaying;
         if (this.ui.playBtn) {
-            this.ui.playBtn.innerText = this.isPlaying ? 'Pause' : 'Play';
+            this.ui.playBtn.innerText = this.isPlaying ? 'Pause' : 'Animate Months';
         }
         if (this.isPlaying) {
+            this.showAverageView = false;
+            this.renderTimeStep(this.currentTimeIndex);
             this.runAnimation();
         } else {
             this.stopAnimation();
@@ -439,15 +538,21 @@ export class MapController {
             this.animationTimer = null;
         }
         if (this.ui.playBtn) {
-            this.ui.playBtn.innerText = 'Play';
+            this.ui.playBtn.innerText = 'Animate Months';
+        }
+
+        if (this.monthlyFrames[this.currentTimeIndex]) {
+            this.updateTimeDisplay(this.monthlyFrames[this.currentTimeIndex].label);
         }
     }
 
     runAnimation() {
         if (this.animationTimer) clearInterval(this.animationTimer);
         this.animationTimer = setInterval(() => {
-            this.currentTimeIndex++;
-            this.renderTimeStep(this.currentTimeIndex);
+            if (this.monthlyFrames.length === 0) return;
+
+            const nextIndex = (this.currentTimeIndex + 1) % this.monthlyFrames.length;
+            this.renderTimeStep(nextIndex);
             
             if (this.ui.slider) {
                 this.ui.slider.value = this.currentTimeIndex;
@@ -456,11 +561,22 @@ export class MapController {
     }
 
     renderTimeStep(index) {
-        this.currentTimeIndex = index;
+        if (this.monthlyFrames.length === 0) {
+            this.updateTimeDisplay('Ready');
+            return;
+        }
+
+        const maxIndex = this.monthlyFrames.length - 1;
+        this.currentTimeIndex = Math.max(0, Math.min(index, maxIndex));
+        this.showAverageView = false;
+        this.updateTimeDisplay(this.monthlyFrames[this.currentTimeIndex].label);
         this.renderData();
     }
 
     renderAverageView() {
+        this.showAverageView = true;
+        this.stopAnimation();
+        this.updateTimeDisplay(this.getAverageViewLabel());
         this.calculateZonePrices();
         this.renderData();
     }
@@ -469,6 +585,26 @@ export class MapController {
         this.playbackSpeed = speed;
         if (this.isPlaying) {
             this.runAnimation(); 
+        }
+    }
+
+    formatMonthLabel(year, month) {
+        const date = new Date(year, month - 1, 1);
+        return date.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    getAverageViewLabel() {
+        if (this.monthlyFrames.length === 0) return 'Ready';
+        if (this.monthlyFrames.length === 1) return this.monthlyFrames[0].label;
+
+        const first = this.monthlyFrames[0].label;
+        const last = this.monthlyFrames[this.monthlyFrames.length - 1].label;
+        return `Average: ${first} - ${last}`;
+    }
+
+    updateTimeDisplay(label) {
+        if (this.ui.timeDisplay) {
+            this.ui.timeDisplay.textContent = label;
         }
     }
 }

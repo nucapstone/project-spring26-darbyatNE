@@ -1,63 +1,172 @@
-## System Architecture
-
-The application is built on a modular architecture to ensure scalability and separation of functionality:
-
-| Component | Tech Stack | Role |
-| :--- | :--- | :--- |
-| **Data Sources** | PJM Data Miner 2 & ArcGIS Online | Harnesses the PJM "Data Vault" for market data and retrieves GeoShapes for PJM zone geodata. |
-| **Database** | AWS RDS (MySQL) | Currently Storing 9GB+ of historical PJM market data. |
-| **Frontend** | Observable Framework (JS/D3) | Interactive visualizations and state management. |
-| **Mapping** | MapLibre GL JS | High-performance vector tile mapping for zone shapes and ISO border identification. |
-| **Backend** | Python (FastAPI) | Handles API requests and executes complex SQL queries. |
-| **Version Control** | GitHub | Source code management and team collaboration. |
-
+---
+title: Infrastructure Setup
+toc: true
 ---
 
-### 1. Infrastructure & Data Setup (Crucial Step)
+# Environment Setup for Reproducing the App
 
-To transition this project from a static demo to a fully functional analytics tool, you must also configure the underlying data infrastructure (MySQL, PJM API, MapTiler) and ingest historical data.
+This document is the practical setup guide for developers who need to recreate the runtime environment and launch the application with `make app`.
 
-👉 Click the **System Architecture** link in the **Gettting Started** section for more information on Architecture & Deployment
+It focuses on the environment and infrastructure needed to run the current repository as it exists today. Some data-ingestion and architecture notes elsewhere in the project are still evolving; this guide is intentionally centered on the shortest reliable path to getting the app running.
 
-This guide provides a comprehensive, step-by-step manual on:
-*   **Acquiring Credentials:** How to set up PJM Data Miner, MapTiler, and AWS/Local MySQL accounts.
-*   **Data Ingestion:** Running the Python scripts in `src/data/` to populate the database with historical market prices and other data.
+## 1. What `make app` depends on
 
-> **Note:** The application requires this data foundation to be in place before the visualization features will function correctly.
+Before `make app` can succeed, the following must already be in place:
 
-### 2. Configuration (.env)
+1. Git is installed.
+2. Conda or Miniconda is installed.
+3. Node.js 18+ and npm are installed.
+4. OpenSSH is installed.
+5. `lsof` is installed so the Makefile can free ports before startup.
+6. A Conda environment named `lmp-env` exists.
+7. Frontend dependencies are installed in `electricity/`.
+8. Database credentials are available through a `.env` file.
+9. The SSH tunnel defined in [makefile](../../makefile) points to a valid host and private key.
 
-Once you have acquired your credentials as detailed in the PDF guide above, create a file named `.env` at the project root.
+## 2. Repository layout relevant to startup
 
-**Add the following keys to your `.env` file:**
-```ini
-PJM_API_KEY=your_pjm_api_key_here
-USER=database_username
-DB_PASSWORD=database_password
-DB_NAME=database_name
-DB_HOST=aws_rds_endpoint
-DB_PORT=3306
-BACKEND_URL=http://127.0.0.1:8000
-MAP_KEY=your_maptiler_map_key
-```
-### 3. Environment Setup
+These are the main files involved in local startup:
 
-Create the Conda environment using the provided YAML file. This installs all necessary Python dependencies.
+* [makefile](../../makefile): launches the tunnel and both app processes.
+* [environment.yml](../environment.yml): Conda environment definition for Python dependencies.
+* [package.json](../../electricity/package.json): frontend and backend npm scripts.
+* [backend.py](../../electricity/api/backend.py): FastAPI backend, including `.env` loading and database connection setup.
+
+## 3. Clone the repository
 
 ```bash
-# Create the environment from file
-conda env create -f lmp_env.yml
+git clone https://github.com/nudataviz/electricity-price-comparison-tool
+cd electricity-price-comparison-tool
+```
 
-# Activate the environment
+## 4. Create the Conda environment
+
+The environment file already exists in the repository and should be used directly.
+
+```bash
+conda env create -f electricity/environment.yml
 conda activate lmp-env
 ```
-### 4. Database Schema Reference
 
-The ingestion scripts (detailed in the PDF guide) will automatically structure your database according to the schema file:
+If you already created the environment earlier and dependencies changed, update it with:
 
-Please refer to the image <span style="color: DodgerBlue; font-weight: bold;">db_schema.png</span> located in the img directory.
-<!-- <div align="center">
-  <img src="./img/db_schema.png" alt="Schema of DB" width="600">
-</div> -->
+```bash
+conda env update -f electricity/environment.yml --prune
+```
 
----
+## 5. Install JavaScript dependencies
+
+The Observable frontend and concurrent startup scripts can be found in `electricity/`.
+
+```bash
+cd electricity
+npm install
+cd ..
+```
+
+## 6. Create the `.env` file for the backend
+
+The backend reads environment variables with `load_dotenv()`. The simplest approach is to create a `.env` file at the repository root.
+
+Add the following keys:
+
+```ini
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_HOST=127.0.0.1
+DB_PORT=5433
+DB_NAME=your_database_name
+```
+
+Notes:
+
+* The backend currently builds a PostgreSQL connection string from these values.
+* `DB_PORT=5433` is used because the Makefile SSH tunnel forwards local port `5433` to the remote database server.
+* If your tunnel target or local forwarding port differs, update both the Makefile and `.env` accordingly.
+
+## 7. Verify the SSH tunnel command in the Makefile
+
+The `app` target relies on `TUNNEL_CMD` in [makefile](../../makefile).
+
+Check all of the following before trying to launch:
+
+* the SSH private key file exists,
+* the file permissions on the key are valid,
+* the remote host is reachable,
+* the remote database host/port forwarding is correct,
+* the local forwarded database port matches the `.env` file.
+
+The Makefile currently also:
+
+* closes an existing matching SSH tunnel if one is already running,
+* checks whether ports `3000` and `8000` are busy,
+* kills processes holding those ports before startup.
+
+## 8. Run the application
+
+From the repository root:
+
+```bash
+make app
+```
+
+On success, this starts:
+
+* the Observable frontend on `http://127.0.0.1:3000`,
+* the FastAPI backend on `http://127.0.0.1:8000`.
+
+## 9. Stop the SSH tunnel
+
+To close the tunnel manually:
+
+```bash
+make stop
+```
+
+## 10. Troubleshooting
+
+### `make app` exits immediately
+
+Check [makefile](../../makefile) first. The most common causes are:
+
+* invalid SSH key path,
+* unreachable SSH host,
+* Conda not available in the current shell,
+* missing `npm` dependencies in `electricity/`.
+
+### Backend fails to start
+
+Check the following:
+
+* `.env` exists and contains `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, and `DB_NAME`,
+* the database is reachable through the configured SSH tunnel,
+* the Conda environment was created from [environment.yml](../environment.yml).
+
+### Frontend fails to start
+
+Run:
+
+```bash
+cd electricity
+npm install
+```
+
+Then retry `make app` from the repository root.
+
+### Ports 3000 or 8000 are already in use
+
+The Makefile now attempts to free those ports automatically. If startup still fails, run:
+
+```bash
+lsof -i :3000 -i :8000
+```
+
+and verify that no unrelated protected process is holding those ports.
+
+## 11. Data population status
+
+Running the UI is not the same as reproducing the full historical dataset.
+
+The application can start once the environment, tunnel, and backend connection are configured, but the visualizations still depend on the underlying PostgreSQL database already containing the expected tables and data.
+
+The ingestion scripts remain in [hydrate](../hydrate), but this guide does not attempt to present them as fully polished end-user setup steps yet. That material should be treated as a separate infrastructure workflow.

@@ -74,6 +74,21 @@ export function initApp() {
             controller.locationalColorExpression = fillColorExpression;
             controller.locationalColorMap = new Map(uniqueZones.map(zone => [zone, zoneColorScale(zone)]));
 
+            // Create conditional text color expression - white text for dark zones, black for light zones
+            const textColorExpression = ['match', ['get', 'Zone_Code']];
+            const darkZones = uniqueZones.filter(zone => {
+                const color = zoneColorScale(zone);
+                // Only the darkest colors from Tableau 10: dark blue, dark green, dark red, brown
+                return color === '#1f77b4' || color === '#2ca02c' || color === '#d62728' || color === '#8c564b';
+            });
+            
+            uniqueZones.forEach(zone => {
+                // Use white text for dark zones, black for light zones
+                const isDark = darkZones.includes(zone);
+                textColorExpression.push(zone, isDark ? '#FFFFFF' : '#000000');
+            });
+            textColorExpression.push('#000000'); // Fallback to black
+
             // 2. Simplified Label Generation (Automatically centers on the shape)
             const labelFeatures = shapes.features.flatMap(f => {
                 const zDisplay = f.properties.Zone_Code; 
@@ -138,13 +153,14 @@ export function initApp() {
                 layout: { 
                     'text-field': ['get', 'Label_Text'], 
                     'text-size': 12, 
+                    'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
                     'text-allow-overlap': false, 
                     'text-ignore-placement': false 
                 }, 
                 paint: { 
-                    'text-color': '#000000', 
+                    'text-color': textColorExpression, 
                     'text-halo-color': '#FFFFFF', 
-                    'text-halo-width': 1 
+                    'text-halo-width': 0.5 
                 } 
             });
             
@@ -279,6 +295,49 @@ export function initApp() {
                         controller.renderCurrentView();
                     }
                 });
+
+                // Keep sidebar row colors aligned with whichever colors are active on the map.
+                const getContrastText = (hexColor) => {
+                    const hex = String(hexColor || '').replace('#', '');
+                    if (hex.length !== 6) return '#111111';
+                    const r = parseInt(hex.slice(0, 2), 16);
+                    const g = parseInt(hex.slice(2, 4), 16);
+                    const b = parseInt(hex.slice(4, 6), 16);
+                    const luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
+                    return luminance < 140 ? '#ffffff' : '#111111';
+                };
+
+                const refreshZoneListColors = () => {
+                    document.querySelectorAll('.zone-item').forEach((item) => {
+                        const zoneName = item.dataset.zoneName;
+                        if (!zoneName || zoneName === 'PJM') {
+                            item.style.backgroundColor = '';
+                            item.style.color = '';
+                            return;
+                        }
+
+                        let fillColor = '#cccccc';
+                        if (controller.activePriceType === 'locational') {
+                            fillColor = controller.locationalColorMap?.get(zoneName) || '#cccccc';
+                        } else if (controller.activePriceType === 'wholesale') {
+                            const ws = controller.wholesalePrices?.[zoneName];
+                            fillColor = ws === null || ws === undefined
+                                ? '#cccccc'
+                                : controller.getColorForPrice(ws, 'wholesale');
+                        } else {
+                            const rt = controller.retailPrices?.[zoneName];
+                            fillColor = rt === null || rt === undefined
+                                ? '#cccccc'
+                                : controller.getColorForPrice(rt, 'retail');
+                        }
+
+                        item.style.backgroundColor = fillColor;
+                        item.style.color = getContrastText(fillColor);
+                    });
+                };
+
+                window.refreshZoneListColors = refreshZoneListColors;
+                refreshZoneListColors();
             }
 
             zonePlotManager.initialize(map, filter);
@@ -408,7 +467,21 @@ export function initApp() {
 
     // Play Button
     const playBtn = document.getElementById('play-btn');
-    if (playBtn) { playBtn.onclick = () => controller.togglePlay(); }
+    if (playBtn) {
+        playBtn.onclick = () => {
+            if (controller.activePriceType === 'locational') {
+                if (priceLabel) {
+                    priceLabel.innerHTML = 'Price View &rarr;';
+                }
+                if (legendBox) {
+                    legendBox.style.display = 'block';
+                }
+                controller.setPriceType('retail');
+            }
+
+            controller.togglePlay();
+        };
+    }
 
     // Average Button
     const avgBtn = document.getElementById('avg-btn');

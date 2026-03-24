@@ -290,10 +290,6 @@ def get_service_territory_price_data(
                 AND r.month = w.month
             WHERE COALESCE(r.year, w.year) >= :start_year 
               AND COALESCE(r.year, w.year) <= :end_year
-              AND COALESCE(r.utility, w.service_territory) IN (
-                  SELECT DISTINCT service_territory 
-                  FROM wholesale_month_price
-              )
         """
         
         params = {"start_year": startYear, "end_year": endYear}

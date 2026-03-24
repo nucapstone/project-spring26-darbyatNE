@@ -39,8 +39,8 @@ pager: false
             <option value="contour">Heatmap (Contour)</option>
         </select>
     </div>
-    <!-- Getting Started Menu (HIDDEN) -->
-    <div style="display: none; position: relative;">
+    <!-- Getting Started Menu -->
+    <div style="display: block; position: relative;">
       <button onclick="const m = document.getElementById('header-help-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block';" 
               class="header-btn">
           🚀 Getting Started <span style="font-size: 10px;">▼</span>
@@ -48,7 +48,7 @@ pager: false
       <!-- Dropdown Menu -->
       <div id="header-help-menu" class="header-dropdown right-aligned" style="min-width: 175px;">
           <a href="#" id="btn-guide">📖 User Guide</a>
-          <a href="#" id="btn-setup">⚙️ Setup Guide</a>
+        <a href="#" id="btn-setup">⚙️ Setup / Environment</a>
           <a href="#" id="btn-arch">🏗️ System Architecture</a>
       </div>
     </div>
@@ -72,7 +72,7 @@ pager: false
     <!-- Right: Filter Trigger -->
     <!-- IMPORTANT: The ID inside here must be 'current-filter-display' -->
     <div class="filter-container" id="filter-trigger" style="display: flex; align-items: center; gap: 12px; cursor: pointer; background: white; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" title="Click to configure filters">
-        <span class="filter-label" style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">⚙️ Selected Data</span>
+        <span class="filter-label" style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">⚙️ Selected Months</span>
         <div id="current-filter-display" style="min-width: 120px; text-align: right;">
             <span style="color: #999; font-style: italic; font-size: 12px;">Loading...</span>
         </div>
@@ -269,6 +269,28 @@ function cleanMarkdown(text) {
     console.error("Error loading docs:", err);
   }
 })();
+
+const btnGuide = document.getElementById('btn-guide');
+if (btnGuide) {
+  btnGuide.addEventListener('click', (e) => {
+    e.preventDefault();
+    const modal = document.getElementById('guide-modal');
+    if (modal) modal.showModal();
+    const menu = document.getElementById('header-help-menu');
+    if (menu) menu.style.display = 'none';
+  });
+}
+
+const btnSetup = document.getElementById('btn-setup');
+if (btnSetup) {
+  btnSetup.addEventListener('click', (e) => {
+    e.preventDefault();
+    const modal = document.getElementById('setup-modal');
+    if (modal) modal.showModal();
+    const menu = document.getElementById('header-help-menu');
+    if (menu) menu.style.display = 'none';
+  });
+}
 
 const btnArch = document.getElementById('btn-arch');
 if (btnArch) {

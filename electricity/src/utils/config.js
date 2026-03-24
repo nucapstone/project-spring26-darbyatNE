@@ -7,19 +7,19 @@ export const API_BASE_URL = "http://localhost:8000";
 
 // --- NEW SCALES ---
 
-// 11-step traditional heat scale: Blue -> Cyan -> Green -> Yellow -> Red
+// 11-step traditional heat scale: Blue -> Cyan -> Green -> Yellow -> Red (muted version)
 const PRICE_COLORS = [
     '#000080', // 0: dark blue
-    '#0000CC', // 1: medium blue
-    '#0066FF', // 2: light blue
-    '#00AAFF', // 3: blue-cyan
-    '#00FFFF', // 4: cyan
-    '#00FFAA', // 5: cyan-green
-    '#00FF00', // 6: green
-    '#AAFF00', // 7: green-yellow
-    '#FFFF00', // 8: yellow
-    '#FFAA00', // 9: yellow-red
-    '#FF0000'  // 10: red
+    '#000066', // 1: darker blue
+    '#004499', // 2: muted blue
+    '#0088CC', // 3: muted cyan-blue
+    '#00AAAA', // 4: muted cyan
+    '#00AA77', // 5: muted cyan-green
+    '#008800', // 6: muted green
+    '#77AA00', // 7: muted green-yellow
+    '#AAAA00', // 8: muted yellow
+    '#AA7700', // 9: muted orange
+    '#880000'  // 10: muted red
 ];
 
 // Retail fits approximately 0.13 -> 0.28

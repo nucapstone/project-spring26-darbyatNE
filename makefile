@@ -7,6 +7,27 @@ TUNNEL_CMD = ssh -f -N -L 5433:127.0.0.1:5432 -L 8001:127.0.0.1:8000 -i ~/.ssh/A
 # Command to find and cleanly kill this specific tunnel if it is already running
 KILL_TUNNEL = pkill -f "[s]sh -f -N -L 5433" 2>/dev/null || true
 
+# App ports that must be free before startup
+APP_PORTS = 3000 8000
+
+# Check each app port and stop any process currently listening on it
+CHECK_AND_FREE_PORTS = @echo "Checking app ports: $(APP_PORTS)"; \
+	for port in $(APP_PORTS); do \
+		pids="$$(lsof -tiTCP:$$port -sTCP:LISTEN 2>/dev/null || true)"; \
+		if [ -n "$$pids" ]; then \
+			echo "Port $$port in use by PID(s): $$pids. Stopping..."; \
+			kill $$pids 2>/dev/null || true; \
+			sleep 1; \
+			still="$$(lsof -tiTCP:$$port -sTCP:LISTEN 2>/dev/null || true)"; \
+			if [ -n "$$still" ]; then \
+				echo "Force killing remaining PID(s) on port $$port: $$still"; \
+				kill -9 $$still 2>/dev/null || true; \
+			fi; \
+		else \
+			echo "Port $$port is available."; \
+		fi; \
+	done
+
 ROOT_DIR = $(shell pwd)
 
 # 2. Detect the OS so all can use 1 command
@@ -24,6 +45,7 @@ app:
 ifeq ($(DETECTED_OS),Darwin)
 	@echo "Checking for existing tunnels..."
 	@$(KILL_TUNNEL)
+	$(CHECK_AND_FREE_PORTS)
 	@echo "Detected macOS. Spawning Apple Terminal..."
 	@osascript -e 'tell app "Terminal" to do script "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate lmp-env && cd electricity && npm run dev"'
 
@@ -31,12 +53,14 @@ else ifeq ($(DETECTED_OS),Linux)
 ifneq ($(IS_WSL),)
 	@echo "Checking for existing tunnels..."
 	@$(KILL_TUNNEL)
+	$(CHECK_AND_FREE_PORTS)
 	@echo "Detected WSL. Starting tunnel silently, then running app in this terminal..."
 	@$(TUNNEL_CMD)
 	@source $$(conda info --base)/etc/profile.d/conda.sh && conda activate lmp-env && cd electricity && npm run dev
 else
 	@echo "Checking for existing tunnels..."
 	@$(KILL_TUNNEL)
+	$(CHECK_AND_FREE_PORTS)
 	@echo "Detected Native Linux. Spawning universal terminal..."
 	@x-terminal-emulator -e bash -c "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate lmp-env && cd electricity && npm run dev; exec bash" || xterm -e bash -c "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate lmp-env && cd electricity && npm run dev; exec bash"
 endif
