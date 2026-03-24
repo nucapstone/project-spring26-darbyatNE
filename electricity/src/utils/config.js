@@ -5,32 +5,54 @@ const isLocal = window.location.hostname === "localhost" || window.location.host
 // export const API_BASE_URL = "https://obvolutive-secondarily-lainey.ngrok-free.dev";
 export const API_BASE_URL = "http://localhost:8000";
 
-export const ZONE_LABEL_OVERRIDES = {
-    "AEP": [[40.9, -84.4], [39.03, -82.55]],
-    "APS": [[39.14, -79.8], [41.46, -78.2]],
-    "COMED": [[41.95, -88.67]],
-    "DAY": [[40.02, -84.42]],
-    "DPL": [[38.74, -75.68]],
-    "DOM": [[37.52, -77.65]],
-    "DUQ": [[40.44, -79.96]],
-    "EKPC": [[37.19, -85.17], [38.25, -83.60]],
-    "FE-ATSI": [[41.2, -81.52]],
-    "METED": [[40.37, -76.45], [40.86, -75.25]],
-    "LGE": [[38.00, -85.06]],
-    "PECO": [[40.10, -75.39]],
-    "PENELEC": [[40.45, -78.29], [41.75, -76.49]],
-    "RECO": [[41.13, -74.34]],
-    "JCPL": [[40.13, -74.24], [40.97, -74.6]]
-};
+// --- NEW SCALES ---
 
-export const COLOR_SCALE = [
-    { threshold: 100, color: '#b30000' }, { threshold: 75, color: '#dc3545' },
-    { threshold: 62, color: '#ff5500' }, { threshold: 52, color: '#ff7b00' },
-    { threshold: 44, color: '#ff9900' }, { threshold: 37, color: '#ffc107' },
-    { threshold: 30, color: '#99cc33' }, { threshold: 25, color: '#00cc66' },
-    { threshold: 20, color: '#00aaff' }, { threshold: 0, color: '#007bff' },
-    { threshold: -Infinity, color: '#800080' }
+// 11-step spectrum from deep blue -> white -> hot red
+const PRICE_COLORS = [
+    '#041E42', // deep blue
+    '#0B3B78',
+    '#194F9C',
+    '#3575B4',
+    '#6FAECB',
+    '#FFFFFF', // white (mid)
+    '#F16C5D',
+    '#F44A3A',
+    '#D93D2A',
+    '#B12922',
+    '#7D0E14'  // hot red
 ];
+
+// Retail fits approximately 0.13 -> 0.28
+export const RETAIL_COLOR_SCALE = [
+    { threshold: 0.13, color: PRICE_COLORS[0] },
+    { threshold: 0.14, color: PRICE_COLORS[1] },
+    { threshold: 0.15, color: PRICE_COLORS[2] },
+    { threshold: 0.16, color: PRICE_COLORS[3] },
+    { threshold: 0.17, color: PRICE_COLORS[4] },
+    { threshold: 0.18, color: PRICE_COLORS[5] },
+    { threshold: 0.19, color: PRICE_COLORS[6] },
+    { threshold: 0.20, color: PRICE_COLORS[7] },
+    { threshold: 0.21, color: PRICE_COLORS[8] },
+    { threshold: 0.23, color: PRICE_COLORS[9] },
+    { threshold: 0.25, color: PRICE_COLORS[10] }
+];
+
+// Wholesale fits approximately 0.015 -> 0.038
+export const WHOLESALE_COLOR_SCALE = [
+    { threshold: 0.015, color: PRICE_COLORS[0] },
+    { threshold: 0.018, color: PRICE_COLORS[1] },
+    { threshold: 0.020, color: PRICE_COLORS[2] },
+    { threshold: 0.022, color: PRICE_COLORS[3] },
+    { threshold: 0.024, color: PRICE_COLORS[4] },
+    { threshold: 0.026, color: PRICE_COLORS[5] },
+    { threshold: 0.028, color: PRICE_COLORS[6] },
+    { threshold: 0.030, color: PRICE_COLORS[7] },
+    { threshold: 0.032, color: PRICE_COLORS[8] },
+    { threshold: 0.035, color: PRICE_COLORS[9] },
+    { threshold: 0.038, color: PRICE_COLORS[10] }
+];
+
+// --- RETAINED SCALE ---
 
 export const NET_COLOR_SCALE = [
     { threshold: 20,  color: '#8b0000' }, // Deepest Red

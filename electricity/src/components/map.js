@@ -6,7 +6,8 @@ import { buildLegend, displayCurrentFilter } from "./ui.js";
 import { zonePlotManager } from "./zone_plot.js";
 import { dateTimeRangePicker } from "./picker.js"; 
 
-import { API_BASE_URL, ZONE_LABEL_OVERRIDES, COLOR_SCALE, NET_COLOR_SCALE } from "../utils/config.js";
+// 1. Removed ZONE_LABEL_OVERRIDES from the import
+import { API_BASE_URL, NET_COLOR_SCALE } from "../utils/config.js";
 import { MapController } from "../managers/app_controller.js";
 
 export function initApp() {
@@ -50,11 +51,14 @@ export function initApp() {
 
             // Map the Database columns to the App's expected properties
             shapes.features.forEach(f => {
-                const dbName = f.properties.name || "Unknown";
+                const dbName = (f.properties.name || "Unknown").trim();
                 f.properties.Zone_Name = dbName; 
-                f.properties.Zone_Code = dbName; // Used for coloring and matching
+                f.properties.Zone_Code = dbName.toUpperCase(); // Normalize to uppercase for matching
                 f.properties.Zone_FullName = dbName; 
             });
+
+            console.log(`📍 LOADED ${shapes.features.length} SHAPES FROM /api/service-terr:`);
+            console.log(shapes.features.map(f => f.properties.Zone_Code).join(", "));
 
             // --- COLOR GENERATION LOGIC ---
             const uniqueZones = [...new Set(shapes.features.map(f => f.properties.Zone_Code))].sort();
@@ -68,13 +72,12 @@ export function initApp() {
 
             // Save the locational colors to the controller so we can toggle back to them
             controller.locationalColorExpression = fillColorExpression;
+            controller.locationalColorMap = new Map(uniqueZones.map(zone => [zone, zoneColorScale(zone)]));
 
-            // Generate Label Points
+            // 2. Simplified Label Generation (Automatically centers on the shape)
             const labelFeatures = shapes.features.flatMap(f => {
                 const zDisplay = f.properties.Zone_Code; 
-                const coords = ZONE_LABEL_OVERRIDES[zDisplay] 
-                    ? ZONE_LABEL_OVERRIDES[zDisplay].map(c => [c[1], c[0]]) 
-                    : [d3.geoCentroid(f)];
+                const coords = [d3.geoCentroid(f)]; // <--- Just uses the automatic center now
                 
                 return coords.map(c => ({ 
                     type: 'Feature', 
@@ -175,7 +178,7 @@ export function initApp() {
                     type: 'Feature',
                     geometry: { type: 'Point', coordinates: [lon, lat] },
                     properties: {
-                        service_territory: lmp.service_territory || 'Unknown',
+                        service_territory: (lmp.service_territory || 'Unknown').toUpperCase(),
                         name: lmp.name || 'N/A',
                         pnode_id: lmp.pnode_id || 'N/A',
                         type: lmp.type || 'N/A',
@@ -236,28 +239,7 @@ export function initApp() {
                 popup.remove();
             });
             
-            // --- GENERATE LEGEND ---
-            const legendEl = document.getElementById('legend');
-            if (legendEl) {
-                legendEl.style.display = 'block';
-                
-                const legendItems = uniqueZones.map(zone => {
-                    const color = zoneColorScale(zone);
-                    return `
-                        <div style="display: flex; align-items: center; margin-bottom: 4px;">
-                            <span style="background-color: ${color}; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
-                            <span style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${zone}</span>
-                        </div>
-                    `;
-                }).join('');
 
-                legendEl.innerHTML = `
-                    <div style="font-weight: bold; margin-bottom: 8px; font-size: 13px;">Territories</div>
-                    <div style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
-                        ${legendItems}
-                    </div>
-                `;
-            }
             
             // Update Zone List (Sidebar)
             const zoneListEl = document.getElementById('zone-list');
@@ -327,6 +309,9 @@ export function initApp() {
             // Fetch the price data in the background!
             controller.loadData(filter);
 
+            // Ensure the initial map starts in locational view with legend shown
+            controller.setPriceType('locational');
+
         } catch (e) { console.error("Map Load Error", e); }
     });
 
@@ -335,9 +320,13 @@ export function initApp() {
     const legendBox = document.getElementById('legend'); 
     const priceLabel = document.querySelector('.price-label'); 
     
-    // Remove master highlight box and hide legend on load
+    console.log('🔍 priceLabel element found:', priceLabel);
+    console.log('🔍 legendBox element found:', legendBox);
+    
+    // Remove master highlight box on load
     if (priceSelectorBox) priceSelectorBox.classList.remove('highlighted');
-    if (legendBox) legendBox.style.display = 'none';
+    // Show locational legend by default
+    if (legendBox) legendBox.style.display = 'block';
 
     // --- A. Master View Toggle (Clicking the Text Label) ---
     if (priceLabel) {
@@ -354,23 +343,30 @@ export function initApp() {
 
         priceLabel.addEventListener('click', (e) => {
             e.stopPropagation();
+            console.log('🖱️ Price label clicked!');
             
             // Check if the label currently says Locational View
             const isLocational = priceLabel.innerHTML.includes('Locational View');
+            console.log('🔍 Current state - isLocational:', isLocational, 'Current HTML:', priceLabel.innerHTML);
             
             if (isLocational) {
                 // SWITCHING TO PRICE VIEW
                 priceLabel.innerHTML = 'Price View &rarr;';
                 if (legendBox) legendBox.style.display = 'block';
-                buildLegend(COLOR_SCALE, "Retail Price ($/MWh)"); 
-                controller.setPriceType('retail'); // Triggers the heatmap
+                console.log('✅ Switched to PRICE VIEW');
+                
+                // The controller now handles building the correct legend automatically!
+                controller.setPriceType('retail'); 
             } else {
                 // SWITCHING BACK TO LOCATIONAL VIEW
                 priceLabel.innerHTML = 'Locational View &rarr;';
-                if (legendBox) legendBox.style.display = 'none';
+                if (legendBox) legendBox.style.display = 'block';
+                console.log('✅ Switched to LOCATIONAL VIEW');
                 controller.setPriceType('locational'); // Resets to default colors
             }
         });
+    } else {
+        console.warn('⚠️ priceLabel element NOT found! Check HTML for .price-label element');
     }
 
     // --- B. Independent Layer Toggles (Retail = Shapes, Wholesale = Pins) ---
@@ -458,13 +454,11 @@ export function initApp() {
                 saveFilter(filter);
                 displayCurrentFilter(filter);
                 
-                // --- NEW LOGIC ADDED HERE ---
                 // Automatically switch the UI and Map to 'Retail' view so the user 
                 // sees the heatmap they just loaded (this also hides the pins!)
                 const retailRadio = document.querySelector('input[value="retail"]');
                 if (retailRadio) retailRadio.checked = true;
                 controller.setPriceType('retail');
-                // ----------------------------
 
                 controller.loadData(filter);
                 modal.close();

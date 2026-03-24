@@ -1,15 +1,7 @@
 import maplibregl from "npm:maplibre-gl";
-import { API_BASE_URL } from "../utils/config.js";
-import { displayCurrentFilter, buildLegend } from "../components/ui.js"; // <-- Added buildLegend
-
-// ==========================================================================
-// 1. COLOR SCALES (10-Step Increments)
-// ==========================================================================
-const COLOR_SCALE = [
-    [0, '#313695'],   [20, '#4575b4'],  [40, '#74add1'],  [60, '#abd9e9'],
-    [80, '#ffffbf'],  [100, '#fee090'], [125, '#fdae61'], [150, '#f46d43'],
-    [200, '#d73027'], [300, '#a50026']
-];
+// 1. Import the new scales from config
+import { API_BASE_URL, RETAIL_COLOR_SCALE, WHOLESALE_COLOR_SCALE } from "../utils/config.js";
+import { displayCurrentFilter, buildLegend } from "../components/ui.js";
 
 export class MapController {
     constructor(map, uiElements = {}) {
@@ -27,14 +19,14 @@ export class MapController {
         this.currentFilter = {};
         this.activePriceType = 'locational'; // Defaults to locational view
         this.selectedZoneName = 'PJM'; 
-        this.locationalColorExpression = null; // Stores the D3 colors from map.js
+        this.locationalColorExpression = null; 
 
         // Animation State
         this.isPlaying = false;
         this.animationTimer = null;
-        this.playbackSpeed = 1000; // Default 1 second per frame
+        this.playbackSpeed = 1000; 
         this.currentTimeIndex = 0;
-        this.contourLayer = null; // Referenced in map.js
+        this.contourLayer = null; 
     }
 
     async init(map) {
@@ -107,13 +99,12 @@ export class MapController {
         }
     }
 
-        toggleLayerVisibility(showRetail, showWholesale) {
+    toggleLayerVisibility(showRetail, showWholesale) {
         if (!this.map) return;
 
         const retailVisibility = showRetail ? 'visible' : 'none';
         const wholesaleVisibility = showWholesale ? 'visible' : 'none';
 
-        // 1. Toggle Retail (Shapes & Borders)
         const retailLayers = [
             'serviceTerritoryFill', 
             'serviceTerritoryFill-3d', 
@@ -127,23 +118,33 @@ export class MapController {
             }
         });
 
-        // 2. Toggle Wholesale (LMP Pins)
         if (this.map.getLayer('retailLmpPinsLayer')) {
             this.map.setLayoutProperty('retailLmpPinsLayer', 'visibility', wholesaleVisibility);
         }
     }
     
-        calculateZonePrices() {
+    calculateZonePrices() {
         if (this.activePriceType === 'locational') return;
 
         this.retailPrices = {};
         this.wholesalePrices = {};
         const zoneAggregates = {};
 
-        // Group and sum BOTH retail and wholesale data by territory
-        this.zoneData.forEach(row => {
-            const zoneName = row.service_territory;
-            if (!zoneName) return;
+        const dataArray = Array.isArray(this.zoneData) ? this.zoneData : (this.zoneData?.data || []);
+
+        if (dataArray.length === 0) {
+            console.warn("⚠️ No pricing data found in this.zoneData");
+            return;
+        }
+
+        console.log(`📥 Processing ${dataArray.length} price data rows`);
+
+        dataArray.forEach(row => {
+            const zoneName = row.service_territory ? row.service_territory.trim().toUpperCase() : null;
+            if (!zoneName) {
+                console.warn("⚠️ Row has no service_territory:", row);
+                return;
+            }
 
             if (!zoneAggregates[zoneName]) {
                 zoneAggregates[zoneName] = { 
@@ -152,43 +153,43 @@ export class MapController {
                 };
             }
 
-            // Tally Retail
             if (row.retail_price !== null && row.retail_price !== undefined) {
                 zoneAggregates[zoneName].retailSum += row.retail_price;
                 zoneAggregates[zoneName].retailCount += 1;
             }
             
-            // Tally Wholesale
             if (row.wholesale_price !== null && row.wholesale_price !== undefined) {
                 zoneAggregates[zoneName].wholesaleSum += row.wholesale_price;
                 zoneAggregates[zoneName].wholesaleCount += 1;
             }
         });
 
-        // Calculate the averages for the selected time period
         for (const [zone, data] of Object.entries(zoneAggregates)) {
             this.retailPrices[zone] = data.retailCount > 0 ? (data.retailSum / data.retailCount) : null;
             this.wholesalePrices[zone] = data.wholesaleCount > 0 ? (data.wholesaleSum / data.wholesaleCount) : null;
         }
+
+        console.log("📊 Aggregated zones:", Object.keys(zoneAggregates).length);
+        console.log("📊 Zones with retail prices:", Object.keys(this.retailPrices).filter(z => this.retailPrices[z] !== null).length);
+        console.log("📊 Zones with wholesale prices:", Object.keys(this.wholesalePrices).filter(z => this.wholesalePrices[z] !== null).length);
+        console.log("📊 Retail Prices (¢/kWh):", this.retailPrices);
+        console.log("📊 Wholesale Prices (¢/kWh):", this.wholesalePrices);
     }
 
     // ==========================================
     // RENDERING & VISUALS
     // ==========================================
 
-        renderData() {
+    renderData() {
         if (!this.map || !this.map.getSource('serviceTerritories')) return;
 
-        // --- 1. Handle Locational View (Reset Colors) ---
         if (this.activePriceType === 'locational') {
             if (this.locationalColorExpression) {
-                // Reset Shapes
                 this.map.setPaintProperty('serviceTerritoryFill', 'fill-color', this.locationalColorExpression);
                 if (this.map.getLayer('serviceTerritoryFill-3d')) {
                     this.map.setPaintProperty('serviceTerritoryFill-3d', 'fill-extrusion-color', this.locationalColorExpression);
                 }
                 
-                // Reset Pins (Reconstructs the match expression for pins using the shape colors)
                 if (this.map.getLayer('retailLmpPinsLayer')) {
                     const pinLocationalColors = ['match', ['get', 'service_territory'], ...this.locationalColorExpression.slice(2)];
                     this.map.setPaintProperty('retailLmpPinsLayer', 'circle-color', pinLocationalColors);
@@ -198,78 +199,121 @@ export class MapController {
             return;
         }
 
-        // --- 2. Handle Price Heatmap View ---
-        
-        // A. Color the Retail Shapes
+        // 2. Build retail expression with price data
         const retailExpression = ['match', ['get', 'Zone_Code']];
         let hasRetailData = false;
+        let matchedRetailZones = [];
         
         for (const [zoneName, price] of Object.entries(this.retailPrices || {})) {
             if (price !== null) {
-                retailExpression.push(zoneName, this.getColorForPrice(price));
+                retailExpression.push(zoneName, this.getColorForPrice(price, 'retail'));
                 hasRetailData = true;
+                matchedRetailZones.push(zoneName);
             }
         }
-        retailExpression.push('#cccccc'); // Fallback color
+        retailExpression.push('#cccccc'); 
 
         if (hasRetailData) {
+            console.log("🎨 Applying Retail Expression to shapes");
+            console.log("   Matched zones:", matchedRetailZones);
+            console.log("   Expression structure:", retailExpression.slice(0, 5), "...");
             this.map.setPaintProperty('serviceTerritoryFill', 'fill-color', retailExpression);
             if (this.map.getLayer('serviceTerritoryFill-3d')) {
                 this.map.setPaintProperty('serviceTerritoryFill-3d', 'fill-extrusion-color', retailExpression);
             }
+        } else {
+            console.warn("⚠️ No retail price data to apply to shapes");
         }
 
-        // B. Color the Wholesale Pins
+        // 3. Build wholesale expression with price data
         if (this.map.getLayer('retailLmpPinsLayer')) {
             const wholesaleExpression = ['match', ['get', 'service_territory']];
             let hasWholesaleData = false;
+            let matchedWholesaleZones = [];
             
             for (const [zoneName, price] of Object.entries(this.wholesalePrices || {})) {
                 if (price !== null) {
-                    wholesaleExpression.push(zoneName, this.getColorForPrice(price));
+                    wholesaleExpression.push(zoneName, this.getColorForPrice(price, 'wholesale'));
                     hasWholesaleData = true;
+                    matchedWholesaleZones.push(zoneName);
                 }
             }
-            wholesaleExpression.push('#ffffff'); // Fallback color for pins with no data
+            wholesaleExpression.push('#ffffff'); 
 
             if (hasWholesaleData) {
+                console.log("📍 Applying Wholesale Expression to pins");
+                console.log("   Matched zones:", matchedWholesaleZones);
+                console.log("   Expression structure:", wholesaleExpression.slice(0, 5), "...");
                 this.map.setPaintProperty('retailLmpPinsLayer', 'circle-color', wholesaleExpression);
+            } else {
+                console.warn("⚠️ No wholesale price data to apply to pins");
             }
         }
         
         this.updateZoneBorders();
     }
 
-    getColorForPrice(price) {
-        // Iterate through the 10-step scale. First one it's less than or equal to, it uses.
-        for (let i = 0; i < COLOR_SCALE.length; i++) {
-            if (price <= COLOR_SCALE[i][0]) {
-                return COLOR_SCALE[i][1];
+    // 4. Updated to handle the new object-based scales
+    getColorForPrice(price, type = 'retail') {
+        if (price === null || price === undefined) return '#cccccc';
+        
+        const scale = type === 'wholesale' ? WHOLESALE_COLOR_SCALE : RETAIL_COLOR_SCALE;
+
+        for (let i = 0; i < scale.length; i++) {
+            if (price <= scale[i].threshold) {
+                return scale[i].color;
             }
         }
-        // If it's higher than the max limit ($300+), return the darkest red
-        return COLOR_SCALE[COLOR_SCALE.length - 1][1];
+        return scale[scale.length - 1].color;
     }
 
+    // 5. Updated to pass the correct scale to the legend builder
     setPriceType(type) {
         this.activePriceType = type;
         this.calculateZonePrices();
+        
+        // 🔍 DIAGNOSTIC: Log zone matching
+        if (type !== 'locational' && this.map && this.map.getSource('serviceTerritories')) {
+            const source = this.map.getSource('serviceTerritories');
+            const features = source._data?.features || [];
+            const mapZones = new Set(features.map(f => f.properties.Zone_Code).filter(Boolean));
+            const priceZones = new Set(
+                Object.keys(type === 'wholesale' ? (this.wholesalePrices || {}) : (this.retailPrices || {}))
+                    .filter(z => (type === 'wholesale' ? this.wholesalePrices[z] : this.retailPrices[z]) !== null)
+            );
+            
+            const matched = [...mapZones].filter(z => priceZones.has(z));
+            const unmatched = [...mapZones].filter(z => !priceZones.has(z));
+            const extra = [...priceZones].filter(z => !mapZones.has(z));
+            
+            console.log(`🔍 Zone Matching for ${type.toUpperCase()}`);
+            console.log(`   📍 MAP ZONES (${mapZones.size}):`, Array.from(mapZones).join(", "));
+            console.log(`   💰 PRICE DATA ZONES (${priceZones.size}):`, Array.from(priceZones).slice(0, 10).join(", "), priceZones.size > 10 ? `... and ${priceZones.size - 10} more` : "");
+            console.log(`   ✓ Matched: ${matched.length}`, matched.join(", "));
+            if (unmatched.length > 0) console.log(`   ✗ Map zones with NO price data: ${unmatched.length}`, unmatched.join(", "));
+            if (extra.length > 0) console.log(`   ⚠️ Price data zones NOT in map: ${extra.length}`, extra.slice(0, 10).join(", "), extra.length > 10 ? `... and ${extra.length - 10} more` : "");
+        }
+        
         this.renderData();
 
-        // --- Handle Legend Updates ---
         const legendBox = document.getElementById('legend');
         
         if (type === 'locational') {
-            if (legendBox) legendBox.style.display = 'none';
+            if (legendBox) legendBox.style.display = 'block';
+            const title = "Locational View";
+            if (typeof buildLegend === 'function') {
+                buildLegend(null, null, title, {
+                    locational: true,
+                    zoneColorMap: this.locationalColorMap
+                });
+            }
         } else {
             if (legendBox) legendBox.style.display = 'block';
-            
-            // Dynamically set the title based on the view
-            const title = type === 'wholesale' ? "Wholesale Price ($/MWh)" : "Retail Price ($/MWh)";
-            
-            // Call the UI builder to draw the 10-step legend
+            const title = "Price (¢/kWh)";
             if (typeof buildLegend === 'function') {
-                buildLegend(COLOR_SCALE, title);
+                buildLegend(RETAIL_COLOR_SCALE, WHOLESALE_COLOR_SCALE, title, {
+                    locational: false
+                });
             }
         }
     }
@@ -341,9 +385,9 @@ export class MapController {
         }
     }
 
-
     createZonePopupHTML(zoneName, priceType, value) {
-        const formattedPrice = value !== null ? `$${value.toFixed(2)}` : 'N/A';
+        // Convert $/kWh to cents/kWh and format
+        const formattedPrice = value !== null ? `${(value * 100).toFixed(1)}¢` : 'N/A';
         
         let label = 'View';
         if (priceType === 'locational') label = 'Locational View';
@@ -366,7 +410,7 @@ export class MapController {
     }
 
     // ==========================================
-    // ANIMATION & TIME CONTROLS (From map.js)
+    // ANIMATION & TIME CONTROLS
     // ==========================================
 
     togglePlay() {
