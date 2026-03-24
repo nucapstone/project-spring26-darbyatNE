@@ -14,7 +14,7 @@ The Electricity Retail/Wholesale Comparison Tool is designed to enable users to 
 </div>
 
 ## Quick Start Guide
-*Prerequisites: Git, Conda or Miniconda, Node.js 18+, npm, OpenSSH, and `lsof` installed.*
+*Prerequisites: Git, Conda or Miniconda, Node.js 18+, npm, OpenSSH.*
 
 The recommended way to run the application is from the repository root with `make app`.
 

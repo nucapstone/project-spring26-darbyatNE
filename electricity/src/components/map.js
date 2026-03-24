@@ -224,39 +224,76 @@ export function initApp() {
                 }
             }, 'serviceTerritoryLabels');
 
-            // Add hover popup for pins
-            const popup = new maplibregl.Popup({ 
-                closeButton: false, 
-                closeOnClick: false,
-                offset: [0, 10] // Position popup below the cursor to avoid overlap
+            // Single popup for pin clicks — close button, closes when clicking empty map
+            const pinClickPopup = new maplibregl.Popup({
+                closeButton: true,
+                closeOnClick: false,  // Must be false — closeOnClick:true self-closes on the creating click
+                offset: [0, -10],
+                anchor: 'bottom'
             });
 
-            map.on('mouseenter', 'retailLmpPinsLayer', (e) => {
+            // Cursor feedback on hover — no popup
+            map.on('mouseenter', 'retailLmpPinsLayer', () => {
                 map.getCanvas().style.cursor = 'pointer';
+            });
+
+            map.on('mouseleave', 'retailLmpPinsLayer', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+            // Click on pin: show location info (locational view) or price info (price view)
+            map.on('click', 'retailLmpPinsLayer', (e) => {
                 const coordinates = e.features[0].geometry.coordinates.slice();
                 const props = e.features[0].properties;
-
-                const description = `
-                    <h4>${props.service_territory}</h4>
-                    <p><strong>Name:</strong> ${props.name}</p>
-                    <p><strong>PNode ID:</strong> ${props.pnode_id}</p>
-                    <p><strong>Type:</strong> ${props.type}</p>
-                    <p><strong>Voltage:</strong> ${props.voltage}</p>
-                    <p><strong>Latitude:</strong> ${props.latitude.toFixed(3)}</p>
-                    <p><strong>Longitude:</strong> ${props.longitude.toFixed(3)}</p>
-                    <p><strong>Location Context:</strong> ${props.location_context}</p>
-                `;
+                const zoneName = props.service_territory;
 
                 while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
                     coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
                 }
 
-                popup.setLngLat(coordinates).setHTML(description).addTo(map);
-            });
+                let content;
 
-            map.on('mouseleave', 'retailLmpPinsLayer', () => {
-                map.getCanvas().style.cursor = '';
-                popup.remove();
+                if (controller.activePriceType === 'locational') {
+                    // Locational view: show location/node details
+                    content = `
+                        <div style="font-size: 12px; max-width: 220px;">
+                            <h4 style="margin: 0 0 8px 0;">${zoneName}</h4>
+                            <p style="margin: 4px 0;"><strong>Name:</strong> ${props.name}</p>
+                            <p style="margin: 4px 0;"><strong>PNode:</strong> ${props.pnode_id}</p>
+                            <p style="margin: 4px 0;"><strong>Type:</strong> ${props.type}</p>
+                            <p style="margin: 4px 0;"><strong>Voltage:</strong> ${props.voltage}</p>
+                            <p style="margin: 4px 0;"><strong>Coords:</strong> ${props.latitude.toFixed(3)}, ${props.longitude.toFixed(3)}</p>
+                            <p style="margin: 4px 0;"><strong>Location:</strong> ${props.location_context}</p>
+                        </div>
+                    `;
+                } else {
+                    // Price view: show LMP name + retail/wholesale prices
+                    const retailPrice = controller.retailPrices ? controller.retailPrices[zoneName] : null;
+                    const wholesalePrice = controller.wholesalePrices ? controller.wholesalePrices[zoneName] : null;
+
+                    content = `<div style="font-size: 12px; min-width: 160px;">
+                        <h4 style="margin: 0 0 8px 0;">${props.name}</h4>
+                        <p style="margin: 2px 0; font-size: 11px; color: #666;">${zoneName}</p>
+                        <hr style="margin: 6px 0; border: none; border-top: 1px solid #ddd;">`;
+
+                    if (retailPrice !== null && retailPrice !== undefined) {
+                        content += `<p style="margin: 4px 0; font-weight: bold; color: #2c5aa0;">Retail: ${retailPrice.toFixed(2)}¢/kWh</p>`;
+                    }
+                    if (wholesalePrice !== null && wholesalePrice !== undefined) {
+                        content += `<p style="margin: 4px 0; font-weight: bold; color: #d9534f;">Wholesale: ${wholesalePrice.toFixed(2)}¢/kWh</p>`;
+                    }
+                    if (retailPrice === null && wholesalePrice === null) {
+                        content += `<p style="margin: 4px 0; color: #888;">No price data available</p>`;
+                    }
+                    content += '</div>';
+                }
+
+                pinClickPopup.setLngLat(coordinates).setHTML(content).addTo(map);
+
+                // Defer so this same click's bubble doesn't immediately close the popup
+                setTimeout(() => {
+                    map.once('click', () => pinClickPopup.isOpen() && pinClickPopup.remove());
+                }, 0);
             });
             
 

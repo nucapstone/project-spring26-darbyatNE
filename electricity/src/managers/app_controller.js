@@ -37,17 +37,17 @@ export class MapController {
         this.map = map;
 
         this.popup = new maplibregl.Popup({
-            closeButton: false,
-            closeOnClick: false,
+            closeButton: true,
+            closeOnClick: false,  // Must be false — closeOnClick:true self-closes on the creating click
             className: 'zone-hover-popup'
         });
 
+        // Hover: cursor feedback only, no popup
         this.map.on('mousemove', 'serviceTerritoryFill', (e) => this.handleMouseMove(e));
         this.map.on('mouseleave', 'serviceTerritoryFill', () => {
             this.map.getCanvas().style.cursor = '';
-            this.popup.remove();
         });
-        
+
         this.map.on('click', 'serviceTerritoryFill', (e) => this.handleMapClick(e));
     }
 
@@ -194,8 +194,10 @@ export class MapController {
             }
         });
 
+        // Pins are visible whenever retail OR wholesale layer is shown
         if (this.map.getLayer('retailLmpPinsLayer')) {
-            this.map.setLayoutProperty('retailLmpPinsLayer', 'visibility', wholesaleVisibility);
+            const showPins = (showRetail || showWholesale) ? 'visible' : 'none';
+            this.map.setLayoutProperty('retailLmpPinsLayer', 'visibility', showPins);
         }
     }
     
@@ -437,6 +439,10 @@ export class MapController {
     // ==========================================
 
     handleMapClick(e) {
+        // Pin clicks are handled separately in map.js — skip if cursor is over a pin
+        const pinFeatures = this.map.queryRenderedFeatures(e.point, { layers: ['retailLmpPinsLayer'] });
+        if (pinFeatures.length > 0) return;
+
         const features = this.map.queryRenderedFeatures(e.point, { 
             layers: ['serviceTerritoryFill', 'serviceTerritoryFill-3d'] 
         });
@@ -445,43 +451,38 @@ export class MapController {
             const clickedZone = features[0].properties.Zone_Code;
             this.selectedZoneName = clickedZone;
             this.updateZoneBorders();
+
+            // Show zone price popup on click in price view only
+            if (this.activePriceType !== 'locational') {
+                let price = null;
+                if (this.activePriceType === 'retail' && this.retailPrices) {
+                    price = this.retailPrices[clickedZone];
+                } else if (this.activePriceType === 'wholesale' && this.wholesalePrices) {
+                    price = this.wholesalePrices[clickedZone];
+                }
+                const html = this.createZonePopupHTML(clickedZone, this.activePriceType, price);
+                this.popup
+                    .setLngLat(e.lngLat)
+                    .setOffset([0, -10])
+                    .setHTML(html)
+                    .addTo(this.map);
+                // Defer so this same click's bubble doesn't immediately close the popup
+                setTimeout(() => {
+                    this.map.once('click', () => this.popup.isOpen() && this.popup.remove());
+                }, 0);
+            }
         }
     }
 
     handleMouseMove(e) {
-        if (this.activePriceType === 'locational') {
-            this.map.getCanvas().style.cursor = '';
-            this.popup.remove();
+        // Hover only updates cursor — popups are shown on click
+        const pinFeatures = this.map.queryRenderedFeatures(e.point, { layers: ['retailLmpPinsLayer'] });
+        if (pinFeatures.length > 0) {
+            this.map.getCanvas().style.cursor = 'pointer';
             return;
         }
-
         const features = this.map.queryRenderedFeatures(e.point, { layers: ['serviceTerritoryFill'] });
-        
-        if (!e.lngLat) return; 
-
-        if (features.length > 0) {
-            this.map.getCanvas().style.cursor = 'pointer';
-            
-            const zoneName = features[0].properties.Zone_Code;
-            // Use the appropriate price data based on active price type
-            let price = null;
-            if (this.activePriceType === 'retail' && this.retailPrices) {
-                price = this.retailPrices[zoneName];
-            } else if (this.activePriceType === 'wholesale' && this.wholesalePrices) {
-                price = this.wholesalePrices[zoneName];
-            }
-
-            const html = this.createZonePopupHTML(zoneName, this.activePriceType, price);
-            
-            this.popup
-                .setLngLat(e.lngLat)
-                .setOffset([0, -10]) // Position popup above the cursor
-                .setHTML(html)
-                .addTo(this.map);
-        } else {
-            this.map.getCanvas().style.cursor = '';
-            this.popup.remove();
-        }
+        this.map.getCanvas().style.cursor = features.length > 0 ? 'pointer' : '';
     }
 
     createZonePopupHTML(zoneName, priceType, value) {
