@@ -96,6 +96,10 @@ export class MapController {
             console.log(`   Unique month-year combos: ${Array.from(uniqueMonths).sort().join(', ')}`);
 
             this.buildMonthlyFrames();
+            if (window.zonePlotManager) {
+                window.zonePlotManager.updateFilter(filter);
+                window.zonePlotManager.updateData(this.monthlyFrames);
+            }
             this.calculateZonePrices();
             this.configureTimeControls();
             this.renderAverageView();
@@ -111,6 +115,9 @@ export class MapController {
             }
             this.zoneData = [];
             this.monthlyFrames = [];
+            if (window.zonePlotManager) {
+                window.zonePlotManager.updateData([]);
+            }
             this.configureTimeControls();
             this.renderData();
         }
@@ -132,6 +139,7 @@ export class MapController {
                     key,
                     year,
                     month,
+                    datetime: new Date(year, month - 1, 1).toISOString(),
                     label: this.formatMonthLabel(year, month),
                     retailPrices: {},
                     wholesalePrices: {}

@@ -379,6 +379,10 @@ export function initApp() {
 
             zonePlotManager.initialize(map, filter);
             window.zonePlotManager = zonePlotManager;
+            zonePlotManager.setVisibleSeries(
+                document.getElementById('price-retail')?.checked !== false,
+                document.getElementById('price-wholesale')?.checked !== false
+            );
 
             // Hover Logic for Sidebar scrolling
             ['serviceTerritoryFill', 'serviceTerritoryFill-3d'].forEach(layerId => {
@@ -495,6 +499,10 @@ export function initApp() {
         
         // Tell the controller to show/hide the specific map layers
         controller.toggleLayerVisibility(showRetail, showWholesale);
+
+        if (zonePlotManager) {
+            zonePlotManager.setVisibleSeries(showRetail, showWholesale);
+        }
     };
 
     // Initialize styles and listeners

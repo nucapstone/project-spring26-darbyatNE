@@ -278,14 +278,14 @@ def get_service_territory_price_data(
         # 1. Build the dynamic SQL query using the FULL OUTER JOIN logic
         base_query = """
             SELECT 
-                COALESCE(r.utility, w.service_territory) AS service_territory,
+                COALESCE(w.service_territory, UPPER(r.utility)) AS service_territory,
                 COALESCE(r.year, w.year) AS year,
                 COALESCE(r.month, w.month) AS month,
                 r.total AS retail_price,
                 w.ws_price/1000 AS wholesale_price
             FROM public.retail_monthly_rates_pjm r
             FULL OUTER JOIN wholesale_month_price w
-                ON r.utility = w.service_territory
+                ON UPPER(r.utility) = w.service_territory
                 AND r.year = w.year
                 AND r.month = w.month
             WHERE COALESCE(r.year, w.year) >= :start_year 

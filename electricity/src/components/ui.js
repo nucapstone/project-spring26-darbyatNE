@@ -74,8 +74,8 @@ export function displayCurrentFilter(filter, statusOverride = null) {
   // 4. Render the HTML
   container.innerHTML = `
     <div style="display: flex; flex-direction: column; line-height: 1.2;">
-      <span style="font-weight: bold; color: #333; font-size: 14px;">${yearText}</span>
-      <span style="font-size: 12px; color: #666;">${monthText}</span>
+            <span style="font-weight: bold; color: #0066cc; font-size: 14px;">${yearText}</span>
+            <span style="font-size: 12px; color: #0066cc;">${monthText}</span>
     </div>
   `;
 }

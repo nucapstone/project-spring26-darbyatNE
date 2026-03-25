@@ -8,6 +8,7 @@ export class ZonePlotManager {
     this.currentFilter = null;
     this.timeSeriesData = null;
     this.currentPriceType = 'da';
+    this.visibleSeries = { retail: true, wholesale: true };
     
     // Chart references for external updates
     this.xScale = null;
@@ -38,35 +39,18 @@ export class ZonePlotManager {
     style.textContent = `
       .plot-panel {
         position: fixed;
-        bottom: 0;        /* Anchor to bottom edge */
-        right: 0%;        /* Anchor to right edge */
-        
-        /* 
-           VISIBLE STATE:
-           X: -5% (Shift left slightly)
-           Y: 40px (Move DOWN by 40px to sit lower on screen)
-        */
-        transform: translate(-4px, -7px) !important;
-        
+        transform: translateY(0) !important;
         background: rgba(255, 255, 255, 0.95);
         z-index: 1000;
         box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
-        border-top-left-radius: 8px;
-        border-top-right-radius: 8px;
+        border-radius: 8px;
         transition: transform 0.3s ease-in-out;
-        width: min(1400px, 100vw);
-        max-height: 50vh;
         overflow: hidden;
         box-sizing: border-box;
       }
       
       .plot-panel.hidden {
-        /* 
-           HIDDEN STATE:
-           Y: 100vh (Move down by full screen height)
-           This guarantees it is completely off-screen.
-        */
-        transform: translate(-5%, 100vh) !important; 
+        transform: translateY(calc(100% + 12px)) !important;
       }
     `;
     document.head.appendChild(style);
@@ -91,6 +75,13 @@ export class ZonePlotManager {
     document.body.appendChild(panel);
 
     this.plotContainer = document.getElementById('plot-content');
+    this.syncPanelToMap();
+
+    if (!this.boundSyncPanelToMap) {
+      this.boundSyncPanelToMap = () => this.syncPanelToMap();
+      window.addEventListener('resize', this.boundSyncPanelToMap);
+      window.addEventListener('scroll', this.boundSyncPanelToMap, { passive: true });
+    }
 
     document.getElementById('clear-zones-btn').addEventListener('click', () => {
       this.clearSelection();
@@ -99,6 +90,18 @@ export class ZonePlotManager {
     document.getElementById('close-plot-btn').addEventListener('click', () => {
       panel.classList.add('hidden');
     });
+  }
+
+  syncPanelToMap() {
+    const panel = document.getElementById('plot-panel');
+    const mapContainer = document.getElementById('map-container');
+    if (!panel || !mapContainer) return;
+
+    const rect = mapContainer.getBoundingClientRect();
+    panel.style.left = `${Math.round(rect.left)}px`;
+    panel.style.top = `${Math.round(rect.top)}px`;
+    panel.style.width = `${Math.round(rect.width)}px`;
+    panel.style.height = `${Math.round(rect.height)}px`;
   }
 
   setupZoneCheckboxes() {
@@ -134,6 +137,7 @@ export class ZonePlotManager {
     this.updateSelectionCount();
     
     if (this.selectedZones.size > 0 && this.timeSeriesData) {
+      this.syncPanelToMap();
       this.plotDataFromExisting(this.timeSeriesData);
       document.getElementById('plot-panel').classList.remove('hidden');
     } else if (this.selectedZones.size === 0) {
@@ -190,9 +194,22 @@ export class ZonePlotManager {
   plotDataFromExisting(timeSeriesData) {
     if (this.selectedZones.size === 0) return;
 
+    // If neither price type is checked, show a prominent message
+    if (!this.visibleSeries.retail && !this.visibleSeries.wholesale) {
+      this.plotContainer.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:400px;">
+          <p style="font-size:32px;font-weight:bold;color:#999;text-align:center;line-height:1.4;">No Price Type Selected</p>
+        </div>`;
+      return;
+    }
+
     try {
       this.plotContainer.innerHTML = '<div class="loading" style="padding: 20px; text-align: center;">Processing data...</div>';
       const plotData = this.transformDataForPlot(timeSeriesData);
+      if (plotData.length === 0) {
+        this.plotContainer.innerHTML = '<p class="empty-state" style="padding: 20px; text-align: center; color: #666;">No retail or wholesale price data available for the selected territories</p>';
+        return;
+      }
       this.renderFocusContextPlot(plotData);
     } catch (error) {
       console.error('Error preparing plot data:', error);
@@ -203,6 +220,48 @@ export class ZonePlotManager {
   transformDataForPlot(timeSeriesData) {
     const plotData = [];
     const selectedZonesArray = Array.from(this.selectedZones);
+
+    if (!Array.isArray(timeSeriesData) || selectedZonesArray.length === 0) {
+      return plotData;
+    }
+
+    const usesMonthlyFrames = timeSeriesData.some(frame => frame && (frame.retailPrices || frame.wholesalePrices));
+
+    if (usesMonthlyFrames) {
+      timeSeriesData.forEach(frame => {
+        const timestamp = new Date(frame.datetime || new Date(frame.year, (frame.month || 1) - 1, 1));
+
+        selectedZonesArray.forEach(zoneName => {
+          if (this.visibleSeries.retail) {
+            const retailPrice = frame.retailPrices?.[zoneName];
+            if (retailPrice !== undefined && retailPrice !== null) {
+              plotData.push({
+                timestamp,
+                zone: zoneName,
+                series: 'Retail',
+                seriesKey: `${zoneName}__retail`,
+                price: retailPrice
+              });
+            }
+          }
+
+          if (this.visibleSeries.wholesale) {
+            const wholesalePrice = frame.wholesalePrices?.[zoneName];
+            if (wholesalePrice !== undefined && wholesalePrice !== null) {
+              plotData.push({
+                timestamp,
+                zone: zoneName,
+                series: 'Wholesale',
+                seriesKey: `${zoneName}__wholesale`,
+                price: wholesalePrice
+              });
+            }
+          }
+        });
+      });
+
+      return plotData;
+    }
 
     const keyMap = {
         'da': ['da', 'total_lmp_da'],
@@ -231,6 +290,8 @@ export class ZonePlotManager {
             plotData.push({
               timestamp: timestamp,
               zone: zoneName,
+              series: this.currentPriceType,
+              seriesKey: `${zoneName}__${this.currentPriceType}`,
               price: price,
               priceType: this.currentPriceType
             });
@@ -248,13 +309,6 @@ export class ZonePlotManager {
       return;
     }
 
-    const priceTypeLabels = {
-      da: 'Day-Ahead',
-      rt: 'Real-Time',
-      net: 'NET',
-      congestion: 'Congestion'
-    };
-
     this.plotContainer.innerHTML = '';
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
@@ -262,19 +316,29 @@ export class ZonePlotManager {
     wrapper.style.gap = '0px'; 
     wrapper.style.padding = '0px'; 
     
-    const containerWidth = Math.min(window.innerWidth - 80, 1400);
-    
-    // Increased focusHeight to fill space
-    const focusHeight = 460; 
-    const contextHeight = 80;
+    const panel = document.getElementById('plot-panel');
+    const availableWidth = panel ? panel.clientWidth : window.innerWidth - 120;
+    const containerWidth = Math.max(520, availableWidth - 48);
+
+    const panelHeight = panel ? panel.clientHeight : 500;
+    const headerHeight = 42;
+    const availablePlotHeight = Math.max(280, panelHeight - headerHeight - 36);
+    const contextHeight = 70;
+    const focusHeight = Math.max(220, availablePlotHeight - contextHeight - 12);
 
     // --- MARGINS HANDLING ---
     const marginLeft = 80;   
-    const marginRight = 20;
+    const marginRight = 85;  // wider to accommodate right Y axis
     const marginTop = 10;    
     const marginBottom = 80; 
 
     this.chartDimensions = { marginTop, marginBottom, focusHeight };
+
+    // Separate data by price type for independent Y scales
+    const retailData = data.filter(d => d.series === 'Retail');
+    const wholesaleData = data.filter(d => d.series === 'Wholesale');
+    const hasRetail = retailData.length > 0;
+    const hasWholesale = wholesaleData.length > 0;
 
     const uniqueTimestamps = Array.from(new Set(data.map(d => d.timestamp.getTime())))
       .sort((a, b) => a - b)
@@ -287,10 +351,29 @@ export class ZonePlotManager {
 
     this.xScale = xScale;
 
-    const yExtent = d3.extent(data, d => d.price);
-    const yScale = d3.scaleLinear()
-      .domain(yExtent)
+    // Use the visible series min/max values as the axis range, with a small pad
+    // only when the series would otherwise collapse to a single value.
+    const scaleDomain = (seriesData) => {
+      if (!seriesData.length) return [0, 1];
+      const [lo, hi] = d3.extent(seriesData, d => d.price);
+      if (lo === hi) {
+        const pad = Math.max(Math.abs(lo) * 0.05, 0.5);
+        return [lo - pad, hi + pad];
+      }
+      return [lo, hi];
+    };
+
+    // Independent Y scales so each price type uses the full vertical range.
+    const yScaleRetail = d3.scaleLinear()
+      .domain(scaleDomain(retailData))
       .range([focusHeight - marginBottom, marginTop]);
+
+    const yScaleWholesale = d3.scaleLinear()
+      .domain(scaleDomain(wholesaleData))
+      .range([focusHeight - marginBottom, marginTop]);
+
+    const getYScale = (seriesName) => seriesName === 'Retail' ? yScaleRetail : yScaleWholesale;
+    const formatCents = (value) => (value * 100).toFixed(2);
 
     const xScaleContext = d3.scalePoint()
       .domain(uniqueTimestamps.map(d => d.getTime()))
@@ -298,11 +381,20 @@ export class ZonePlotManager {
       .padding(0.1);
 
     const yScaleContext = d3.scaleLinear()
-      .domain(yExtent)
+      .domain(d3.extent(data, d => d.price))
       .range([contextHeight - 20, 10]);
 
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10)
       .domain(Array.from(this.selectedZones));
+
+    const getSeriesStroke = (seriesName, zoneName) => {
+      const color = colorScale(zoneName);
+      return {
+        color,
+        dash: seriesName === 'Wholesale' ? '6 4' : null,
+        width: seriesName === 'Wholesale' ? 2.5 : 2
+      };
+    };
 
     const svg = d3.create("svg")
       .attr("width", containerWidth)
@@ -323,103 +415,202 @@ export class ZonePlotManager {
     this.focusGroup = focus;
     const context = svg.append("g").attr("class", "context").attr("transform", `translate(0,${focusHeight + 10})`);
 
-    focus.append("g")
+    const focusXGrid = focus.append("g")
       .attr("class", "grid")
       .attr("transform", `translate(0,${focusHeight - marginBottom})`)
       .call(d3.axisBottom(xScale).tickSize(-(focusHeight - marginTop - marginBottom)).tickFormat(""))
       .call(g => g.select(".domain").remove())
       .call(g => g.selectAll(".tick line").attr("stroke", "#e0e0e0"));
 
-    focus.append("g")
+    const focusYGrid = focus.append("g")
       .attr("class", "grid")
       .attr("transform", `translate(${marginLeft},0)`)
-      .call(d3.axisLeft(yScale).tickSize(-(containerWidth - marginLeft - marginRight)).tickFormat(""))
+      .call(d3.axisLeft(yScaleRetail).tickSize(-(containerWidth - marginLeft - marginRight)).tickFormat(""))
       .call(g => g.select(".domain").remove())
       .call(g => g.selectAll(".tick line").attr("stroke", "#e0e0e0"));
 
-    const dataByZone = d3.group(data, d => d.zone);
+    const dataBySeries = d3.group(data, d => d.seriesKey);
     const focusLines = focus.append("g").attr("clip-path", "url(#clip)");
 
     this.cursorGroup = focus.append("g")
       .attr("class", "cursor-group")
       .attr("clip-path", "url(#clip)");
 
-    const line = d3.line()
-      .x(d => xScale(d.timestamp.getTime()))
-      .y(d => yScale(d.price))
-      .curve(d3.curveMonotoneX);
+    dataBySeries.forEach((seriesData, seriesKey) => {
+      const sortedData = seriesData.sort((a, b) => a.timestamp - b.timestamp);
+      const firstPoint = sortedData[0];
+      const zoneName = firstPoint.zone;
+      const style = getSeriesStroke(firstPoint.series, zoneName);
+      const yS = getYScale(firstPoint.series);
 
-    dataByZone.forEach((zoneData, zoneName) => {
-      const sortedData = zoneData.sort((a, b) => a.timestamp - b.timestamp);
+      const line = d3.line()
+        .x(d => xScale(d.timestamp.getTime()))
+        .y(d => yS(d.price))
+        .curve(d3.curveMonotoneX);
       
       focusLines.append("path")
         .datum(sortedData)
-        .attr("class", `line-${zoneName.replace(/\W/g, '_')}`)
+        .attr("class", `line-${seriesKey.replace(/\W/g, '_')}`)
         .attr("fill", "none")
-        .attr("stroke", colorScale(zoneName))
-        .attr("stroke-width", 2)
+        .attr("stroke", style.color)
+        .attr("stroke-width", style.width)
+        .attr("stroke-dasharray", style.dash)
         .attr("opacity", 0.8)
         .attr("d", line);
 
-      focusLines.selectAll(`.dot-${zoneName.replace(/\W/g, '_')}`)
+      focusLines.selectAll(`.dot-${seriesKey.replace(/\W/g, '_')}`)
         .data(sortedData)
         .join("circle")
-        .attr("class", `dot-${zoneName.replace(/\W/g, '_')}`)
+        .attr("class", `dot-${seriesKey.replace(/\W/g, '_')}`)
         .attr("cx", d => xScale(d.timestamp.getTime()))
-        .attr("cy", d => yScale(d.price))
+        .attr("cy", d => yS(d.price))
         .attr("r", 3)
-        .attr("fill", colorScale(zoneName))
+        .attr("fill", firstPoint.series === 'Wholesale' ? '#ffffff' : style.color)
         .attr("stroke", "white")
-        .attr("stroke-width", 1);
+        .attr("stroke-width", 1.5)
+        .attr("stroke", style.color);
     });
     
     const xAxisGroup = focus.append("g")
       .attr("class", "x-axis")
       .attr("transform", `translate(0,${focusHeight - marginBottom})`);
+
+    const leftAxisGroup = focus.append("g")
+      .attr("class", "y-axis-left")
+      .attr("transform", `translate(${marginLeft},0)`);
+
+    const rightAxisGroup = focus.append("g")
+      .attr("class", "y-axis-right")
+      .attr("transform", `translate(${containerWidth - marginRight},0)`);
+
+    const axisLabelLayer = focus.append("g").attr("class", "axis-label-layer");
     
     const renderXAxis = (group, scale) => {
+      const tickValues = scale.domain().filter((d, i) => {
+        const totalTicks = scale.domain().length;
+        const interval = Math.max(1, Math.floor(totalTicks / 10));
+        return i % interval === 0;
+      });
+
       group.call(d3.axisBottom(scale)
-        .tickValues(scale.domain()) 
-        .tickFormat(d => d3.timeFormat("%m/%d/%y-%H:%M")(new Date(d)))
+        .tickValues(tickValues)
+        .tickFormat(d => d3.timeFormat("%b %y")(new Date(d)))
       )
       .selectAll("text")
-        .style("font-size", "12px")  
-        .attr("transform", "rotate(-90)") 
+        .style("font-size", "12px")
+        .attr("transform", "rotate(-45)")
         .attr("dx", "-0.8em")
-        .attr("dy", "-0.5em")
+        .attr("dy", "0.1em")
         .style("text-anchor", "end");
     };
 
+    const addAxisKey = ({ x, y, text, color, dash }) => {
+      const group = axisLabelLayer.append("g")
+        .attr("transform", `translate(${x},${y}) rotate(-90)`);
+
+      group.append("line")
+        .attr("x1", -28)
+        .attr("x2", -4)
+        .attr("y1", 0)
+        .attr("y2", 0)
+        .attr("stroke", color)
+        .attr("stroke-width", 3)
+        .attr("stroke-dasharray", dash || null)
+        .attr("stroke-linecap", "round");
+
+      group.append("text")
+        .attr("x", 4)
+        .attr("y", 4)
+        .style("text-anchor", "start")
+        .style("font-size", "11px")
+        .style("font-weight", "600")
+        .style("fill", color)
+        .text(text);
+    };
+
+    const renderYAxes = (visibleData) => {
+      const visibleRetail = visibleData.filter(d => d.series === 'Retail');
+      const visibleWholesale = visibleData.filter(d => d.series === 'Wholesale');
+      const retailVisible = visibleRetail.length > 0;
+      const wholesaleVisible = visibleWholesale.length > 0;
+
+      if (retailVisible) {
+        yScaleRetail.domain(scaleDomain(visibleRetail));
+      }
+      if (wholesaleVisible) {
+        yScaleWholesale.domain(scaleDomain(visibleWholesale));
+      }
+
+      const leftScale = retailVisible ? yScaleRetail : yScaleWholesale;
+
+      focusYGrid
+        .call(d3.axisLeft(leftScale).tickSize(-(containerWidth - marginLeft - marginRight)).tickFormat(""))
+        .call(g => g.select(".domain").remove())
+        .call(g => g.selectAll(".tick line").attr("stroke", "#e0e0e0"));
+
+      leftAxisGroup.style("display", null);
+      leftAxisGroup.call(d3.axisLeft(leftScale).tickFormat(formatCents));
+      leftAxisGroup.selectAll("text").style("font-size", "13px");
+
+      rightAxisGroup.selectAll("*").remove();
+      axisLabelLayer.selectAll("*").remove();
+
+      if (retailVisible && wholesaleVisible) {
+        rightAxisGroup.call(d3.axisRight(yScaleWholesale).tickFormat(formatCents));
+        rightAxisGroup.selectAll("text").style("font-size", "13px");
+
+        addAxisKey({
+          x: 20,
+          y: focusHeight / 2,
+          text: "Retail",
+          color: "#2c5aa0",
+          dash: null
+        });
+        addAxisKey({
+          x: containerWidth - marginRight + 58,
+          y: focusHeight / 2,
+          text: "Wholesale",
+          color: "#d9534f",
+          dash: "6 4"
+        });
+      } else if (retailVisible) {
+        addAxisKey({
+          x: 20,
+          y: focusHeight / 2,
+          text: "Retail",
+          color: "#2c5aa0",
+          dash: null
+        });
+      } else if (wholesaleVisible) {
+        addAxisKey({
+          x: 20,
+          y: focusHeight / 2,
+          text: "Wholesale",
+          color: "#d9534f",
+          dash: "6 4"
+        });
+      }
+    };
+
     renderXAxis(xAxisGroup, xScale);
-
-    focus.append("g")
-      .attr("transform", `translate(${marginLeft},0)`)
-      .call(d3.axisLeft(yScale))
-      .selectAll("text")
-      .style("font-size", "14px"); 
-
-    focus.append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("x", -(focusHeight / 2))
-      .attr("y", 20)
-      .style("text-anchor", "middle")
-      .style("font-size", "12px") 
-      .style("font-weight", "500")
-      .text(`${priceTypeLabels[this.currentPriceType]} Price ($/MWh)`);
+    renderYAxes(data);
 
     const lineContext = d3.line()
       .x(d => xScaleContext(d.timestamp.getTime()))
       .y(d => yScaleContext(d.price))
       .curve(d3.curveMonotoneX);
 
-    dataByZone.forEach((zoneData, zoneName) => {
-      const sortedData = zoneData.sort((a, b) => a.timestamp - b.timestamp);
+    dataBySeries.forEach((seriesData, seriesKey) => {
+      const sortedData = seriesData.sort((a, b) => a.timestamp - b.timestamp);
+      const firstPoint = sortedData[0];
+      const style = getSeriesStroke(firstPoint.series, firstPoint.zone);
       context.append("path")
         .datum(sortedData)
-        .attr("class", `line-context-${zoneName.replace(/\W/g, '_')}`)
+        .attr("class", `line-context-${seriesKey.replace(/\W/g, '_')}`)
         .attr("fill", "none")
-        .attr("stroke", colorScale(zoneName))
+        .attr("stroke", style.color)
         .attr("stroke-width", 1.5)
+        .attr("stroke-dasharray", style.dash)
         .attr("opacity", 0.7)
         .attr("d", lineContext);
     });
@@ -432,15 +623,15 @@ export class ZonePlotManager {
           const interval = Math.max(1, Math.floor(totalTicks / 8));
           return i % interval === 0;
         }))
-        .tickFormat(d => d3.timeFormat("%m/%d")(new Date(d))))
+        .tickFormat(d => d3.timeFormat("%b %y")(new Date(d))))
       .selectAll("text")
       .style("font-size", "10px");
 
     // --- LEGEND SETUP ---
     const legendContainer = svg.append("foreignObject")
-      .attr("x", containerWidth - 250) 
+      .attr("x", containerWidth - marginRight - 320) 
       .attr("y", 0)
-      .attr("width", 240) 
+      .attr("width", 310) 
       .attr("height", 400);
 
     const legendDiv = legendContainer.append("xhtml:div")
@@ -455,7 +646,7 @@ export class ZonePlotManager {
     // Legend Header Row
     legendDiv.append("xhtml:div")
       .style("display", "grid")
-      .style("grid-template-columns", "1fr 70px 70px") 
+      .style("grid-template-columns", "minmax(0, 1fr) 76px 76px") 
       .style("gap", "5px")
       .style("font-weight", "bold")
       .style("border-bottom", "1px solid #ccc")
@@ -464,8 +655,8 @@ export class ZonePlotManager {
       .style("color", "#333")
       .html(`
         <span>Zone</span>
-        <span style="text-align:right">Avg</span>
-        <span style="text-align:right">Std Dev</span>
+        <span style="text-align:right">Min</span>
+        <span style="text-align:right">Max</span>
       `);
 
     const legendItemsContainer = legendDiv.append("xhtml:div");
@@ -474,25 +665,28 @@ export class ZonePlotManager {
     const updateLegendStats = (filteredData) => {
       legendItemsContainer.html(""); // Clear existing items
 
-      // Group filtered data by zone
-      const grouped = d3.group(filteredData, d => d.zone);
+      const grouped = d3.group(filteredData, d => d.seriesKey);
 
-      this.selectedZones.forEach(zoneName => {
-        const zonePoints = grouped.get(zoneName) || [];
-        
-        // Filter to ensure we only calculate valid numbers
-        const prices = zonePoints
+      Array.from(grouped.entries())
+        .sort((a, b) => {
+          const left = a[1][0];
+          const right = b[1][0];
+          return left.zone.localeCompare(right.zone) || left.series.localeCompare(right.series);
+        })
+        .forEach(([, seriesPoints]) => {
+          const firstPoint = seriesPoints[0];
+          const zoneName = firstPoint.zone;
+          const style = getSeriesStroke(firstPoint.series, zoneName);
+          const prices = seriesPoints
             .map(d => d.price)
             .filter(p => typeof p === 'number' && isFinite(p));
-        
-        const avg = prices.length ? d3.mean(prices) : 0;
-        
-        // Sample Standard Deviation
-        const std = prices.length > 1 ? d3.deviation(prices) : 0;
 
-        const item = legendItemsContainer.append("xhtml:div")
+          const min = prices.length ? d3.min(prices) : 0;
+          const max = prices.length ? d3.max(prices) : 0;
+
+          const item = legendItemsContainer.append("xhtml:div")
           .style("display", "grid")
-          .style("grid-template-columns", "1fr 70px 70px")
+          .style("grid-template-columns", "minmax(0, 1fr) 76px 76px")
           .style("gap", "5px")
           .style("align-items", "center")
           .style("margin-bottom", "4px")
@@ -512,25 +706,26 @@ export class ZonePlotManager {
           .style("border-radius", "2px")
           .style("margin-right", "6px")
           .style("flex-shrink", "0")
-          .style("background-color", colorScale(zoneName));
+          .style("background-color", firstPoint.series === 'Wholesale' ? '#ffffff' : style.color)
+          .style("border", `2px ${firstPoint.series === 'Wholesale' ? 'dashed' : 'solid'} ${style.color}`);
 
         zoneLabel.append("xhtml:span")
           .style("text-overflow", "ellipsis")
           .style("overflow", "hidden")
           .text(zoneName);
 
-        // Col 2: Avg
+        // Col 2: Min
         item.append("xhtml:div")
           .style("text-align", "right")
           .style("font-weight", "500")
-          .text(`$${avg.toFixed(2)}`);
+          .text(formatCents(min));
 
-        // Col 3: Std
+        // Col 3: Max
         item.append("xhtml:div")
           .style("text-align", "right")
           .style("color", "#666")
-          .text(`$${std.toFixed(2)}`);
-      });
+          .text(formatCents(max));
+        });
     };
 
     // Initial Legend Render (Full Data)
@@ -552,20 +747,24 @@ export class ZonePlotManager {
 
     const brushed = (event) => {
       if (!event.selection) {
-          // If selection is cleared, reset to full data
-          xScale.domain(uniqueTimestamps.map(d => d.getTime()));
-          updateLegendStats(data);
-          
-          // Redraw lines
-          dataByZone.forEach((zoneData, zoneName) => {
-              focusLines.select(`.line-${zoneName.replace(/\W/g, '_')}`).attr("d", line);
-              focusLines.selectAll(`.dot-${zoneName.replace(/\W/g, '_')}`)
-                  .attr("cx", d => xScale(d.timestamp.getTime()))
-                  .attr("cy", d => yScale(d.price));
-          });
-          xAxisGroup.selectAll("*").remove();
-          renderXAxis(xAxisGroup, xScale);
-          return;
+        xScale.domain(uniqueTimestamps.map(d => d.getTime()));
+        updateLegendStats(data);
+        renderYAxes(data);
+        dataBySeries.forEach((seriesData, seriesKey) => {
+          const firstPoint = seriesData[0];
+          const yS = getYScale(firstPoint.series);
+          const line = d3.line()
+            .x(d => xScale(d.timestamp.getTime()))
+            .y(d => yS(d.price))
+            .curve(d3.curveMonotoneX);
+          focusLines.select(`.line-${seriesKey.replace(/\W/g, '_')}`).attr("d", line);
+          focusLines.selectAll(`.dot-${seriesKey.replace(/\W/g, '_')}`)
+            .attr("cx", d => xScale(d.timestamp.getTime()))
+            .attr("cy", d => yS(d.price));
+        });
+        xAxisGroup.selectAll("*").remove();
+        renderXAxis(xAxisGroup, xScale);
+        return;
       }
       
       const [x0Px, x1Px] = event.selection;
@@ -588,27 +787,35 @@ export class ZonePlotManager {
 
       // Update Legend
       updateLegendStats(visibleData);
+      renderYAxes(visibleData);
 
       // Redraw Lines
-      dataByZone.forEach((zoneData, zoneName) => {
-        const sortedData = zoneData
+      dataBySeries.forEach((seriesData, seriesKey) => {
+        const sortedData = seriesData
           .filter(d => selectedTimestamps.some(t => t.getTime() === d.timestamp.getTime()))
           .sort((a, b) => a.timestamp - b.timestamp);
+        const firstPoint = sortedData[0] || seriesData[0];
+        const style = getSeriesStroke(firstPoint.series, firstPoint.zone);
+        const yS = getYScale(firstPoint.series);
+        const lineSel = d3.line()
+          .x(d => xScale(d.timestamp.getTime()))
+          .y(d => yS(d.price))
+          .curve(d3.curveMonotoneX);
         
-        focusLines.select(`.line-${zoneName.replace(/\W/g, '_')}`)
+        focusLines.select(`.line-${seriesKey.replace(/\W/g, '_')}`)
           .datum(sortedData)
-          .attr("d", line);
+          .attr("d", lineSel);
 
-        focusLines.selectAll(`.dot-${zoneName.replace(/\W/g, '_')}`)
+        focusLines.selectAll(`.dot-${seriesKey.replace(/\W/g, '_')}`)
           .data(sortedData, d => d.timestamp.getTime())
           .join("circle")
-          .attr("class", `dot-${zoneName.replace(/\W/g, '_')}`)
+          .attr("class", `dot-${seriesKey.replace(/\W/g, '_')}`)
           .attr("cx", d => xScale(d.timestamp.getTime()))
-          .attr("cy", d => yScale(d.price))
+          .attr("cy", d => yS(d.price))
           .attr("r", 3)
-          .attr("fill", colorScale(zoneName))
-          .attr("stroke", "white")
-          .attr("stroke-width", 1);
+          .attr("fill", firstPoint.series === 'Wholesale' ? '#ffffff' : style.color)
+          .attr("stroke", style.color)
+          .attr("stroke-width", 1.5);
       });
 
       xAxisGroup.selectAll("*").remove();
@@ -669,6 +876,17 @@ export class ZonePlotManager {
     this.timeSeriesData = newTimeSeriesData;
     if (this.selectedZones.size > 0) {
       this.plotDataFromExisting(newTimeSeriesData);
+    }
+  }
+
+  setVisibleSeries(showRetail, showWholesale) {
+    this.visibleSeries = {
+      retail: showRetail !== false,
+      wholesale: showWholesale !== false
+    };
+
+    if (this.selectedZones.size > 0 && this.timeSeriesData) {
+      this.plotDataFromExisting(this.timeSeriesData);
     }
   }
 

@@ -205,7 +205,7 @@ input#price-cong:checked + label {
   overflow: hidden; 
   flex: 1; 
   min-width: 0; 
-  background-color: #e7f3ff;
+  background-color: #e8e8e8;
 }
 
 .filter-label, .price-label {
@@ -224,7 +224,7 @@ input#price-cong:checked + label {
 .filter-label {
   border: 1px solid #666;
   border-radius: 4px;
-  background-color: #ffffff;
+  background-color: #e8e8e8;
   padding: 4px 8px;
 }
 

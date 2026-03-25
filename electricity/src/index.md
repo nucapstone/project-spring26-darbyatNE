@@ -56,10 +56,10 @@ pager: false
 </div>
 
 <!-- Top Controls (Price Type & Filter) -->
-<div class="top-controls-wrapper" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #f8f9fa; border-bottom: 1px solid #ddd; margin-bottom: 0;">
+<div class="top-controls-wrapper" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 20px; background: #f0f0f0; border-bottom: 1px solid #ddd; margin-bottom: 0;">
     <!-- Left: Price Selector -->
-    <div class="price-selector" style="display: flex; align-items: center; gap: 10px;">
-        <span class="price-label" style="font-weight: bold; color: #555; font-size: 14px;">Price Type &rarr;</span>
+    <div class="price-selector" style="display: flex; align-items: center; gap: 12px; background: #dcdcdc; padding: 6px 12px; border: 1px solid #000; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); box-sizing: border-box; flex: 0 0 auto;">
+        <span class="price-label" style="font-weight: bold; color: #555; font-size: 12px;">⚙️ Price Type &rarr;</span>
         <div style="display: flex; align-items: center; gap: 5px;">
             <input type="checkbox" id="price-retail" name="price-type" value="retail" checked style="cursor: pointer;">
             <label for="price-retail" style="cursor: pointer; font-size: 14px;">Retail</label>
@@ -71,9 +71,9 @@ pager: false
     </div>
     <!-- Right: Filter Trigger -->
     <!-- IMPORTANT: The ID inside here must be 'current-filter-display' -->
-    <div class="filter-container" id="filter-trigger" style="display: flex; align-items: center; gap: 12px; cursor: pointer; background: white; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" title="Click to configure filters">
-        <span class="filter-label" style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">⚙️ Selected Months</span>
-        <div id="current-filter-display" style="min-width: 120px; text-align: right;">
+    <div class="filter-container" id="filter-trigger" style="display: flex; align-items: center; justify-content: flex-start; gap: 12px; cursor: pointer; background: #dcdcdc; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); box-sizing: border-box; flex: 1 1 auto; min-width: 300px; margin-left: 16px;" title="Click to configure filters">
+        <span class="filter-label" style="font-size: 12px; color: #666; font-weight: 600;">⚙️ Selected Months &rarr;</span>
+        <div id="current-filter-display" style="min-width: 120px; text-align: left;">
             <span style="color: #999; font-style: italic; font-size: 12px;">Loading...</span>
         </div>
     </div>
@@ -233,6 +233,35 @@ picker.addEventListener('apply', (e) => {
 
 // 6. Initial Header Display
 displayCurrentFilter(filter);
+
+function lockTopControlBoxSize() {
+  const priceBox = document.querySelector('.top-controls-wrapper .price-selector');
+  const filterBox = document.getElementById('filter-trigger');
+  if (!priceBox || !filterBox) return;
+
+  // First measure natural loaded size.
+  priceBox.style.width = 'auto';
+  priceBox.style.height = 'auto';
+  filterBox.style.height = 'auto';
+
+  const priceRect = priceBox.getBoundingClientRect();
+  const filterRect = filterBox.getBoundingClientRect();
+
+  const targetHeight = Math.ceil(Math.max(priceRect.height, filterRect.height));
+  const priceWidth = Math.ceil(priceRect.width);
+  if (!filterBox.dataset.initialWidth) {
+    filterBox.dataset.initialWidth = `${Math.ceil(filterRect.width)}px`;
+  }
+
+  // Keep price width fixed; keep filter at its loaded wider width.
+  priceBox.style.width = `${priceWidth}px`;
+  filterBox.style.width = filterBox.dataset.initialWidth;
+  priceBox.style.height = `${targetHeight}px`;
+  filterBox.style.height = `${targetHeight}px`;
+}
+
+setTimeout(lockTopControlBoxSize, 0);
+window.addEventListener('load', lockTopControlBoxSize, {once: true});
 
 
 // =========================================================

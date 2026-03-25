@@ -18,10 +18,25 @@ Before `make app` can succeed, the following must already be in place:
 3. Node.js 18+ and npm are installed.
 4. OpenSSH is installed.
 5. `lsof` is installed so the Makefile can free ports before startup.
-6. A Conda environment named `lmp-env` exists.
+6. A Conda environment named `lmp-lite` exists.
 7. Frontend dependencies are installed in `electricity/`.
 8. Database credentials are available through a `.env` file.
 9. The SSH tunnel defined in [makefile](../../makefile) points to a valid host and private key.
+
+### Dependency inventory used for this setup
+
+The dependency files were trimmed based on imports scanned across this repository.
+
+Python packages in [environment.yml](../environment.yml):
+
+* `fastapi`, `uvicorn`, `sqlalchemy`, `pydantic`, `python-dotenv`
+* `requests`, `pymysql`, `psycopg2`, `mysql-connector-python`
+* `pandas`, `geopandas`, `shapely`, `matplotlib`, `openpyxl`
+
+NPM packages in [package.json](../../electricity/package.json):
+
+* Runtime: `d3`, `maplibre-gl`, `@observablehq/plot`, `@turf/turf`
+* Tooling: `@observablehq/framework`, `concurrently`, `rimraf`
 
 ## 2. Repository layout relevant to startup
 
@@ -45,13 +60,23 @@ The environment file already exists in the repository and should be used directl
 
 ```bash
 conda env create -f electricity/environment.yml
-conda activate lmp-env
+conda activate lmp-lite
 ```
+
+This setup creates a separate lightweight environment (`lmp-lite`) and does not modify an existing `lmp-env`.
 
 If you already created the environment earlier and dependencies changed, update it with:
 
 ```bash
 conda env update -f electricity/environment.yml --prune
+```
+
+After updating Conda dependencies, reinstall JavaScript packages to keep lockfiles and local modules aligned:
+
+```bash
+cd electricity
+npm install
+cd ..
 ```
 
 ## 5. Install JavaScript dependencies
@@ -141,6 +166,7 @@ Check the following:
 * `.env` exists and contains `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, and `DB_NAME`,
 * the database is reachable through the configured SSH tunnel,
 * the Conda environment was created from [environment.yml](../environment.yml).
+* if needed, refresh the environment with `conda env update -f electricity/environment.yml --prune`.
 
 ### Frontend fails to start
 

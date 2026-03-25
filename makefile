@@ -29,6 +29,7 @@ CHECK_AND_FREE_PORTS = @echo "Checking app ports: $(APP_PORTS)"; \
 	done
 
 ROOT_DIR = $(shell pwd)
+CONDA_ENV_NAME ?= lmp-lite
 
 # 2. Detect the OS so all can use 1 command
 ifeq ($(OS),Windows_NT)
@@ -47,7 +48,7 @@ ifeq ($(DETECTED_OS),Darwin)
 	@$(KILL_TUNNEL)
 	$(CHECK_AND_FREE_PORTS)
 	@echo "Detected macOS. Spawning Apple Terminal..."
-	@osascript -e 'tell app "Terminal" to do script "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate lmp-env && cd electricity && npm run dev"'
+	@osascript -e 'tell app "Terminal" to do script "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev"'
 
 else ifeq ($(DETECTED_OS),Linux)
 ifneq ($(IS_WSL),)
@@ -56,20 +57,20 @@ ifneq ($(IS_WSL),)
 	$(CHECK_AND_FREE_PORTS)
 	@echo "Detected WSL. Starting tunnel silently, then running app in this terminal..."
 	@$(TUNNEL_CMD)
-	@source $$(conda info --base)/etc/profile.d/conda.sh && conda activate lmp-env && cd electricity && npm run dev
+	@source $$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev
 else
 	@echo "Checking for existing tunnels..."
 	@$(KILL_TUNNEL)
 	$(CHECK_AND_FREE_PORTS)
 	@echo "Detected Native Linux. Spawning universal terminal..."
-	@x-terminal-emulator -e bash -c "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate lmp-env && cd electricity && npm run dev; exec bash" || xterm -e bash -c "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate lmp-env && cd electricity && npm run dev; exec bash"
+	@x-terminal-emulator -e bash -c "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev; exec bash" || xterm -e bash -c "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev; exec bash"
 endif
 
 else ifeq ($(DETECTED_OS),Windows)
 	@echo "Checking for existing tunnels..."
 	@-taskkill /F /IM ssh.exe >nul 2>&1 || true
 	@echo "Detected Windows. Spawning Command Prompt..."
-	@start cmd /k "cd /d $(ROOT_DIR) && start /b $(TUNNEL_CMD) && call conda activate lmp-env && cd electricity && npm run dev"
+	@start cmd /k "cd /d $(ROOT_DIR) && start /b $(TUNNEL_CMD) && call conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev"
 
 else
 	@echo "Unsupported Operating System: $(DETECTED_OS)"
