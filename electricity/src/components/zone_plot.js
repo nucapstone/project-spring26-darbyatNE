@@ -380,6 +380,48 @@ export class ZonePlotManager {
 
     const getYScale = (seriesName) => seriesName === 'Retail' ? yScaleRetail : yScaleWholesale;
     const formatCents = (value) => (value * 100).toFixed(2);
+    const formatLegendName = (name) => {
+      if (typeof name !== 'string' || !name.length) return name;
+
+      let result = '';
+      let inParentheses = false;
+      let shouldCapitalize = true;
+
+      for (const ch of name) {
+        if (ch === '(') {
+          inParentheses = true;
+          result += ch;
+          continue;
+        }
+        if (ch === ')') {
+          inParentheses = false;
+          result += ch;
+          continue;
+        }
+
+        if (inParentheses) {
+          result += ch;
+          continue;
+        }
+
+        if (/[a-zA-Z]/.test(ch)) {
+          if (shouldCapitalize) {
+            result += ch.toUpperCase();
+            shouldCapitalize = false;
+          } else {
+            result += ch.toLowerCase();
+          }
+          continue;
+        }
+
+        result += ch;
+        if (/\s|-|\//.test(ch)) {
+          shouldCapitalize = true;
+        }
+      }
+
+      return result;
+    };
 
     const xScaleContext = d3.scalePoint()
       .domain(uniqueTimestamps.map(d => d.getTime()))
@@ -640,12 +682,27 @@ export class ZonePlotManager {
       .selectAll("text")
       .style("font-size", "10px");
 
+    context.append("g")
+      .attr("class", "y-axis-context")
+      .attr("transform", `translate(${marginLeft},0)`)
+      .call(d3.axisLeft(yScaleContext)
+        .ticks(4)
+        .tickFormat(formatCents)
+      )
+      .call(g => g.selectAll("text").style("font-size", "9px"));
+
     // --- LEGEND SETUP ---
+    const legendWidth = 390;
+    const legendHeight = 400;
+    let legendX = containerWidth - marginRight - legendWidth - 10;
+    let legendY = 0;
+
     const legendContainer = svg.append("foreignObject")
-      .attr("x", containerWidth - marginRight - 320) 
-      .attr("y", 0)
-      .attr("width", 310) 
-      .attr("height", 400);
+      .attr("x", legendX)
+      .attr("y", legendY)
+      .attr("width", legendWidth)
+      .attr("height", legendHeight)
+      .style("cursor", "move");
 
     const legendDiv = legendContainer.append("xhtml:div")
       .style("background-color", "rgba(255, 255, 255, 0.95)")
@@ -654,7 +711,8 @@ export class ZonePlotManager {
       .style("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.2)")
       .style("font-family", "sans-serif")
       .style("font-size", "14px") 
-      .style("line-height", "1.4");
+      .style("line-height", "1.4")
+      .style("user-select", "none");
 
     let legendMinimized = false;
     const legendToolbar = legendDiv.append("xhtml:div")
@@ -685,87 +743,152 @@ export class ZonePlotManager {
 
     const legendBody = legendDiv.append("xhtml:div");
 
+    const updateLegendPosition = () => {
+      const maxX = Math.max(0, containerWidth - legendWidth);
+      const maxY = Math.max(0, totalChartHeight - legendHeight);
+      legendX = Math.max(0, Math.min(maxX, legendX));
+      legendY = Math.max(0, Math.min(maxY, legendY));
+      legendContainer.attr("x", legendX).attr("y", legendY);
+    };
+
+    const legendDrag = d3.drag()
+      .on("drag", (event) => {
+        legendX += event.dx;
+        legendY += event.dy;
+        updateLegendPosition();
+      });
+
+    legendContainer.call(legendDrag);
+
+    const getLegendSeriesColumns = (legendData) => {
+      const availableSeries = Array.from(new Set(legendData.map(d => d.series)));
+      const orderedSeries = ['Retail', 'Wholesale'];
+      const knownSeries = orderedSeries.filter(series => availableSeries.includes(series));
+      const otherSeries = availableSeries
+        .filter(series => !orderedSeries.includes(series))
+        .sort((left, right) => left.localeCompare(right));
+
+      return [...knownSeries, ...otherSeries];
+    };
+
     // Legend Header Row
-    legendBody.append("xhtml:div")
+    const legendHeader = legendBody.append("xhtml:div")
       .style("display", "grid")
-      .style("grid-template-columns", "minmax(0, 1fr) 76px 76px") 
       .style("gap", "5px")
       .style("font-weight", "bold")
       .style("border-bottom", "1px solid #ccc")
       .style("padding-bottom", "4px")
       .style("margin-bottom", "6px")
-      .style("color", "#333")
-      .html(`
-        <span>Zone</span>
-        <span style="text-align:right">Min<br><span style="font-weight: normal;">(¢/kWhr)</span></span>
-        <span style="text-align:right">Max<br><span style="font-weight: normal;">(¢/kWhr)</span></span>
-      `);
+      .style("color", "#333");
 
     const legendItemsContainer = legendBody.append("xhtml:div");
 
     // --- LEGEND UPDATE FUNCTION ---
     const updateLegendStats = (filteredData) => {
       legendItemsContainer.html(""); // Clear existing items
+      legendHeader.html("");
 
-      const grouped = d3.group(filteredData, d => d.seriesKey);
+      const legendSeriesColumns = getLegendSeriesColumns(filteredData);
+      const getSeriesColumnWidth = () => "88px";
+      const expandedColumns = legendSeriesColumns.flatMap((seriesName) => {
+        if (seriesName === 'Retail' || seriesName === 'Wholesale') {
+          return [
+            { kind: 'symbol', seriesName },
+            { kind: 'value', seriesName }
+          ];
+        }
+
+        return [{ kind: 'value', seriesName }];
+      });
+      const headerColumns = [
+        "minmax(0, 1fr)",
+        ...expandedColumns.map((column) => column.kind === 'symbol' ? "12px" : getSeriesColumnWidth(column.seriesName))
+      ];
+
+      legendHeader
+        .style("grid-template-columns", headerColumns.join(" "));
+
+      legendHeader.append("xhtml:span").text("Service Territory");
+
+      expandedColumns.forEach((column) => {
+        if (column.kind === 'symbol') {
+          legendHeader.append("xhtml:span");
+          return;
+        }
+
+        const headerLabel = column.seriesName === 'Retail'
+          ? 'Retail Avg\n(¢/kWhr)'
+          : column.seriesName === 'Wholesale'
+            ? 'Wholesale Avg\n(¢/kWhr)'
+            : `${column.seriesName} Avg`;
+
+        legendHeader.append("xhtml:span")
+          .style("text-align", column.seriesName === 'Retail' || column.seriesName === 'Wholesale' ? "left" : "right")
+          .style("white-space", "pre-line")
+          .text(headerLabel);
+      });
+
+      const grouped = d3.group(filteredData, d => d.zone);
 
       Array.from(grouped.entries())
         .sort((a, b) => {
-          const left = a[1][0];
-          const right = b[1][0];
-          return left.zone.localeCompare(right.zone) || left.series.localeCompare(right.series);
+          const [leftZone] = a;
+          const [rightZone] = b;
+          return leftZone.localeCompare(rightZone);
         })
-        .forEach(([, seriesPoints]) => {
-          const firstPoint = seriesPoints[0];
-          const zoneName = firstPoint.zone;
-          const style = getSeriesStroke(firstPoint.series, zoneName);
-          const prices = seriesPoints
-            .map(d => d.price)
-            .filter(p => typeof p === 'number' && isFinite(p));
+        .forEach(([zoneName, zonePoints]) => {
+          const averagesBySeries = new Map();
+          const zoneColor = colorScale(zoneName);
 
-          const min = prices.length ? d3.min(prices) : 0;
-          const max = prices.length ? d3.max(prices) : 0;
+          legendSeriesColumns.forEach((seriesName) => {
+            const prices = zonePoints
+              .filter(d => d.series === seriesName)
+              .map(d => d.price)
+              .filter(p => typeof p === 'number' && isFinite(p));
+
+            averagesBySeries.set(seriesName, prices.length ? d3.mean(prices) : null);
+          });
 
           const item = legendItemsContainer.append("xhtml:div")
           .style("display", "grid")
-          .style("grid-template-columns", "minmax(0, 1fr) 76px 76px")
-          .style("gap", "5px")
+          .style("grid-template-columns", headerColumns.join(" "))
+          .style("column-gap", "3px")
+          .style("row-gap", "5px")
           .style("align-items", "center")
           .style("margin-bottom", "4px")
           .style("border-bottom", "1px solid #f0f0f0")
           .style("padding-bottom", "2px");
 
-        // Col 1: Zone Name + Color
-        const zoneLabel = item.append("xhtml:div")
-          .style("display", "flex")
-          .style("align-items", "center")
-          .style("overflow", "hidden")
-          .style("white-space", "nowrap");
+          item.append("xhtml:span")
+            .style("white-space", "normal")
+            .style("overflow-wrap", "anywhere")
+            .text(formatLegendName(zoneName));
 
-        zoneLabel.append("xhtml:span")
-          .style("width", "18px")
-          .style("height", "0")
-          .style("margin-right", "6px")
-          .style("flex-shrink", "0")
-          .style("border-top", `3px ${firstPoint.series === 'Wholesale' ? 'dashed' : 'solid'} ${style.color}`)
-          .style("border-radius", "2px");
+          expandedColumns.forEach((column) => {
+            const average = averagesBySeries.get(column.seriesName);
 
-        zoneLabel.append("xhtml:span")
-          .style("text-overflow", "ellipsis")
-          .style("overflow", "hidden")
-          .text(zoneName);
+            if (column.kind === 'symbol') {
+              const symbolCell = item.append("xhtml:div")
+                .style("display", "flex")
+                .style("justify-content", "center")
+                .style("align-items", "center");
 
-        // Col 2: Min
-        item.append("xhtml:div")
-          .style("text-align", "right")
-          .style("font-weight", "500")
-          .text(formatCents(min));
+              if (average !== null) {
+                symbolCell.append("xhtml:div")
+                  .style("width", "12px")
+                  .style("height", "0")
+                  .style("border-top", `3px ${column.seriesName === 'Wholesale' ? 'dashed' : 'solid'} ${zoneColor}`)
+                  .style("border-radius", "2px");
+              }
+              return;
+            }
 
-        // Col 3: Max
-        item.append("xhtml:div")
-          .style("text-align", "right")
-          .style("color", "#666")
-          .text(formatCents(max));
+            item.append("xhtml:div")
+              .style("text-align", column.seriesName === 'Retail' || column.seriesName === 'Wholesale' ? "left" : "right")
+              .style("font-weight", "500")
+              .style("color", average === null ? "#999" : null)
+              .text(average === null ? "-" : formatCents(average));
+          });
         });
     };
 
