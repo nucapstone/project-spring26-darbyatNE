@@ -39,8 +39,10 @@ export class ZonePlotManager {
     style.textContent = `
       .plot-panel {
         position: fixed;
+        display: flex;
+        flex-direction: column;
         transform: translateY(0) !important;
-        background: rgba(255, 255, 255, 0.95);
+        background: #f0f0f0;
         z-index: 1000;
         box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
         border-radius: 8px;
@@ -60,7 +62,7 @@ export class ZonePlotManager {
     panel.className = 'plot-panel hidden';
     
     panel.innerHTML = `
-      <div class="plot-header" style="padding: 4px 10px; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; border-bottom: 1px solid #eee;">
+      <div class="plot-header" style="padding: 4px 10px; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; background: #f0f0f0; border-bottom: 1px solid #ddd;">
         <h3 style="margin: 0; font-size: 16px; color: #333;">Price Analysis</h3>
         <div class="plot-controls" style="display: flex; gap: 10px; align-items: center;">
           <span id="selected-zones-count" style="font-size: 12px; color: #666;">0 zones selected</span>
@@ -68,7 +70,7 @@ export class ZonePlotManager {
           <button id="close-plot-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #666;">&times;</button>
         </div>
       </div>
-      <div id="plot-content" style="padding: 0;">
+      <div id="plot-content" style="padding: 0; background: #f0f0f0; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;">
         <p class="empty-state" style="padding: 10px; text-align: center; color: #666;">Select zones using checkboxes in the sidebar to begin</p>
       </div>
     `;
@@ -313,8 +315,10 @@ export class ZonePlotManager {
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
     wrapper.style.flexDirection = 'column';
+    wrapper.style.flex = '1 1 auto';
     wrapper.style.gap = '0px'; 
     wrapper.style.padding = '0px'; 
+    wrapper.style.background = '#f0f0f0';
     
     const panel = document.getElementById('plot-panel');
     const availableWidth = panel ? panel.clientWidth : window.innerWidth - 120;
@@ -322,9 +326,11 @@ export class ZonePlotManager {
 
     const panelHeight = panel ? panel.clientHeight : 500;
     const headerHeight = 42;
-    const availablePlotHeight = Math.max(280, panelHeight - headerHeight - 36);
-    const contextHeight = 70;
-    const focusHeight = Math.max(220, availablePlotHeight - contextHeight - 12);
+    const plotContentHeight = this.plotContainer ? this.plotContainer.clientHeight : 0;
+    const availablePlotHeight = Math.max(280, plotContentHeight || (panelHeight - headerHeight));
+    const contextHeight = 82;
+    const chartBottomPadding = 28;
+    const focusHeight = Math.max(220, availablePlotHeight - contextHeight - chartBottomPadding);
 
     // --- MARGINS HANDLING ---
     const marginLeft = 80;   
@@ -396,12 +402,19 @@ export class ZonePlotManager {
       };
     };
 
+    const totalChartHeight = focusHeight + contextHeight + chartBottomPadding;
+
+    wrapper.style.height = `${totalChartHeight}px`;
+    wrapper.style.minHeight = `${totalChartHeight}px`;
+
     const svg = d3.create("svg")
       .attr("width", containerWidth)
-      .attr("height", focusHeight + contextHeight + 10)
-      .attr("viewBox", [0, 0, containerWidth, focusHeight + contextHeight + 10])
+      .attr("height", totalChartHeight)
+      .attr("viewBox", [0, 0, containerWidth, totalChartHeight])
       .style("max-width", "100%")
-      .style("height", "auto");
+      .style("height", `${totalChartHeight}px`)
+      .style("background", "#f0f0f0")
+      .style("display", "block");
 
     svg.append("defs").append("clipPath")
       .attr("id", "clip")
@@ -563,14 +576,14 @@ export class ZonePlotManager {
           x: 20,
           y: focusHeight / 2,
           text: "Retail",
-          color: "#2c5aa0",
+          color: "#555555",
           dash: null
         });
         addAxisKey({
           x: containerWidth - marginRight + 58,
           y: focusHeight / 2,
           text: "Wholesale",
-          color: "#d9534f",
+          color: "#555555",
           dash: "6 4"
         });
       } else if (retailVisible) {
@@ -578,7 +591,7 @@ export class ZonePlotManager {
           x: 20,
           y: focusHeight / 2,
           text: "Retail",
-          color: "#2c5aa0",
+          color: "#555555",
           dash: null
         });
       } else if (wholesaleVisible) {
@@ -586,7 +599,7 @@ export class ZonePlotManager {
           x: 20,
           y: focusHeight / 2,
           text: "Wholesale",
-          color: "#d9534f",
+          color: "#555555",
           dash: "6 4"
         });
       }
@@ -643,8 +656,37 @@ export class ZonePlotManager {
       .style("font-size", "14px") 
       .style("line-height", "1.4");
 
+    let legendMinimized = false;
+    const legendToolbar = legendDiv.append("xhtml:div")
+      .style("display", "flex")
+      .style("align-items", "center")
+      .style("justify-content", "space-between")
+      .style("margin-bottom", "6px")
+      .style("font-weight", "bold")
+      .style("font-size", "12px");
+
+    legendToolbar.append("xhtml:span").text("Legend");
+
+    const legendToggleButton = legendToolbar.append("xhtml:button")
+      .attr("type", "button")
+      .attr("aria-expanded", "true")
+      .attr("title", "Minimize legend")
+      .style("border", "1px solid #bbb")
+      .style("border-radius", "3px")
+      .style("background", "#fff")
+      .style("color", "#333")
+      .style("font-size", "12px")
+      .style("width", "20px")
+      .style("height", "20px")
+      .style("line-height", "16px")
+      .style("padding", "0")
+      .style("cursor", "pointer")
+      .text("-");
+
+    const legendBody = legendDiv.append("xhtml:div");
+
     // Legend Header Row
-    legendDiv.append("xhtml:div")
+    legendBody.append("xhtml:div")
       .style("display", "grid")
       .style("grid-template-columns", "minmax(0, 1fr) 76px 76px") 
       .style("gap", "5px")
@@ -655,11 +697,11 @@ export class ZonePlotManager {
       .style("color", "#333")
       .html(`
         <span>Zone</span>
-        <span style="text-align:right">Min</span>
-        <span style="text-align:right">Max</span>
+        <span style="text-align:right">Min<br><span style="font-weight: normal;">(¢/kWhr)</span></span>
+        <span style="text-align:right">Max<br><span style="font-weight: normal;">(¢/kWhr)</span></span>
       `);
 
-    const legendItemsContainer = legendDiv.append("xhtml:div");
+    const legendItemsContainer = legendBody.append("xhtml:div");
 
     // --- LEGEND UPDATE FUNCTION ---
     const updateLegendStats = (filteredData) => {
@@ -701,13 +743,12 @@ export class ZonePlotManager {
           .style("white-space", "nowrap");
 
         zoneLabel.append("xhtml:span")
-          .style("width", "12px")
-          .style("height", "12px")
-          .style("border-radius", "2px")
+          .style("width", "18px")
+          .style("height", "0")
           .style("margin-right", "6px")
           .style("flex-shrink", "0")
-          .style("background-color", firstPoint.series === 'Wholesale' ? '#ffffff' : style.color)
-          .style("border", `2px ${firstPoint.series === 'Wholesale' ? 'dashed' : 'solid'} ${style.color}`);
+          .style("border-top", `3px ${firstPoint.series === 'Wholesale' ? 'dashed' : 'solid'} ${style.color}`)
+          .style("border-radius", "2px");
 
         zoneLabel.append("xhtml:span")
           .style("text-overflow", "ellipsis")
@@ -727,6 +768,17 @@ export class ZonePlotManager {
           .text(formatCents(max));
         });
     };
+
+    legendToggleButton.on("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      legendMinimized = !legendMinimized;
+      legendBody.style("display", legendMinimized ? "none" : "block");
+      legendToggleButton
+        .text(legendMinimized ? "+" : "-")
+        .attr("aria-expanded", legendMinimized ? "false" : "true")
+        .attr("title", legendMinimized ? "Expand legend" : "Minimize legend");
+    });
 
     // Initial Legend Render (Full Data)
     updateLegendStats(data);

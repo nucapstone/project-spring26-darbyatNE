@@ -387,6 +387,10 @@ export function initApp() {
             // Hover Logic for Sidebar scrolling
             ['serviceTerritoryFill', 'serviceTerritoryFill-3d'].forEach(layerId => {
                 map.on('click', layerId, (e) => {
+                    if (controller.activePriceType !== 'locational') {
+                        controller.handleMapClick(e);
+                    }
+
                     const feature = e.features[0];
                     const zoneCode = feature.properties.Zone_Code; 
                     map.setFilter('serviceTerritoryLines-selected', ['==', 'Zone_Code', zoneCode]);
@@ -432,10 +436,22 @@ export function initApp() {
     // Show locational legend by default
     if (legendBox) legendBox.style.display = 'block';
 
+    const syncPriceLabel = () => {
+        if (!priceLabel) return;
+        const isLocational = controller.activePriceType === 'locational';
+        priceLabel.innerHTML = `${isLocational ? 'Locational' : 'Price'} View &rarr;`;
+    };
+
+    const setMasterView = (type) => {
+        if (legendBox) legendBox.style.display = 'block';
+        controller.setPriceType(type);
+        syncPriceLabel();
+    };
+
     // --- A. Master View Toggle (Clicking the Text Label) ---
     if (priceLabel) {
-        // Start by displaying "Locational View" since that's the default map state
-        priceLabel.innerHTML = 'Locational View &rarr;';
+        // Initialize from controller state to avoid label/view drift.
+        syncPriceLabel();
         priceLabel.style.cursor = 'pointer';
         priceLabel.style.padding = '4px 8px';
         priceLabel.style.borderRadius = '4px';
@@ -449,24 +465,16 @@ export function initApp() {
             e.stopPropagation();
             console.log('🖱️ Price label clicked!');
             
-            // Check if the label currently says Locational View
-            const isLocational = priceLabel.innerHTML.includes('Locational View');
-            console.log('🔍 Current state - isLocational:', isLocational, 'Current HTML:', priceLabel.innerHTML);
+            // Use controller state as source of truth.
+            const isLocational = controller.activePriceType === 'locational';
+            console.log('🔍 Current state - isLocational:', isLocational, 'activePriceType:', controller.activePriceType);
             
             if (isLocational) {
-                // SWITCHING TO PRICE VIEW
-                priceLabel.innerHTML = 'Price View &rarr;';
-                if (legendBox) legendBox.style.display = 'block';
                 console.log('✅ Switched to PRICE VIEW');
-                
-                // The controller now handles building the correct legend automatically!
-                controller.setPriceType('retail'); 
+                setMasterView('retail'); 
             } else {
-                // SWITCHING BACK TO LOCATIONAL VIEW
-                priceLabel.innerHTML = 'Locational View &rarr;';
-                if (legendBox) legendBox.style.display = 'block';
                 console.log('✅ Switched to LOCATIONAL VIEW');
-                controller.setPriceType('locational'); // Resets to default colors
+                setMasterView('locational');
             }
         });
     } else {
@@ -515,13 +523,7 @@ export function initApp() {
     if (playBtn) {
         playBtn.onclick = () => {
             if (controller.activePriceType === 'locational') {
-                if (priceLabel) {
-                    priceLabel.innerHTML = 'Price View &rarr;';
-                }
-                if (legendBox) {
-                    legendBox.style.display = 'block';
-                }
-                controller.setPriceType('retail');
+                setMasterView('retail');
             }
 
             controller.togglePlay();
@@ -580,7 +582,7 @@ export function initApp() {
                 // sees the heatmap they just loaded (this also hides the pins!)
                 const retailRadio = document.querySelector('input[value="retail"]');
                 if (retailRadio) retailRadio.checked = true;
-                controller.setPriceType('retail');
+                setMasterView('retail');
 
                 controller.loadData(filter);
                 modal.close();

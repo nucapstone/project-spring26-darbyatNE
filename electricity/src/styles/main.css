@@ -281,6 +281,7 @@ input#price-cong:checked + label {
   display: flex; 
   flex-direction: column; 
   position: relative; 
+  background: #f0f0f0;
   min-width: 0; 
 }
 
@@ -296,7 +297,7 @@ input#price-cong:checked + label {
   align-items: center; 
   padding: 0 15px;
   border-top: 1px solid #ccc; 
-  background: #f8f9fa; 
+  background: #f0f0f0; 
   gap: 10px;
 }
 #play-btn {

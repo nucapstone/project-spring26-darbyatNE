@@ -17,6 +17,8 @@ export class MapController {
         this.monthlyFrames = [];
         this.retailPrices = {};
         this.wholesalePrices = {};
+        this.retailColorScale = [...RETAIL_COLOR_SCALE];
+        this.wholesaleColorScale = [...WHOLESALE_COLOR_SCALE];
         
         // Filter & View State
         this.currentFilter = {};
@@ -96,6 +98,7 @@ export class MapController {
             console.log(`   Unique month-year combos: ${Array.from(uniqueMonths).sort().join(', ')}`);
 
             this.buildMonthlyFrames();
+            this.updateDynamicColorScales();
             if (window.zonePlotManager) {
                 window.zonePlotManager.updateFilter(filter);
                 window.zonePlotManager.updateData(this.monthlyFrames);
@@ -115,6 +118,8 @@ export class MapController {
             }
             this.zoneData = [];
             this.monthlyFrames = [];
+            this.retailColorScale = [...RETAIL_COLOR_SCALE];
+            this.wholesaleColorScale = [...WHOLESALE_COLOR_SCALE];
             if (window.zonePlotManager) {
                 window.zonePlotManager.updateData([]);
             }
@@ -164,6 +169,54 @@ export class MapController {
         console.log(`   Months present: ${monthsFound.join(', ')}`);
 
         this.currentTimeIndex = 0;
+    }
+
+    updateDynamicColorScales() {
+        const dataArray = Array.isArray(this.zoneData) ? this.zoneData : (this.zoneData?.data || []);
+
+        const retailValues = dataArray
+            .map(row => row?.retail_price)
+            .filter(value => typeof value === 'number' && Number.isFinite(value));
+
+        const wholesaleValues = dataArray
+            .map(row => row?.wholesale_price)
+            .filter(value => typeof value === 'number' && Number.isFinite(value));
+
+        this.retailColorScale = this.buildRangeScale(retailValues, RETAIL_COLOR_SCALE);
+        this.wholesaleColorScale = this.buildRangeScale(wholesaleValues, WHOLESALE_COLOR_SCALE);
+
+        if (retailValues.length > 0 || wholesaleValues.length > 0) {
+            const retailMin = retailValues.length ? Math.min(...retailValues) : null;
+            const retailMax = retailValues.length ? Math.max(...retailValues) : null;
+            const wholesaleMin = wholesaleValues.length ? Math.min(...wholesaleValues) : null;
+            const wholesaleMax = wholesaleValues.length ? Math.max(...wholesaleValues) : null;
+            console.log('🎚️ Dynamic scale ranges', {
+                retail: retailMin !== null ? [retailMin, retailMax] : 'no-data',
+                wholesale: wholesaleMin !== null ? [wholesaleMin, wholesaleMax] : 'no-data'
+            });
+        }
+    }
+
+    buildRangeScale(values, fallbackScale) {
+        const colors = fallbackScale.map(step => step.color);
+        if (!values.length || colors.length === 0) return [...fallbackScale];
+
+        let min = Math.min(...values);
+        let max = Math.max(...values);
+
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return [...fallbackScale];
+
+        if (min === max) {
+            const pad = Math.max(Math.abs(min) * 0.05, 0.0005);
+            min -= pad;
+            max += pad;
+        }
+
+        const stepSize = (max - min) / (colors.length - 1);
+        return colors.map((color, index) => ({
+            threshold: min + (stepSize * index),
+            color
+        }));
     }
 
     configureTimeControls() {
@@ -361,7 +414,7 @@ export class MapController {
     getColorForPrice(price, type = 'retail') {
         if (price === null || price === undefined) return '#cccccc';
         
-        const scale = type === 'wholesale' ? WHOLESALE_COLOR_SCALE : RETAIL_COLOR_SCALE;
+        const scale = type === 'wholesale' ? this.wholesaleColorScale : this.retailColorScale;
 
         for (let i = 0; i < scale.length; i++) {
             if (price <= scale[i].threshold) {
@@ -413,7 +466,7 @@ export class MapController {
             if (legendBox) legendBox.style.display = 'block';
             const title = "Price (¢/kWh)";
             if (typeof buildLegend === 'function') {
-                buildLegend(RETAIL_COLOR_SCALE, WHOLESALE_COLOR_SCALE, title, {
+                buildLegend(this.retailColorScale, this.wholesaleColorScale, title, {
                     locational: false
                 });
             }
@@ -447,6 +500,8 @@ export class MapController {
     // ==========================================
 
     handleMapClick(e) {
+        if (e && e._zonePopupHandled) return;
+
         // Pin clicks are handled separately in map.js — skip if cursor is over a pin
         const pinFeatures = this.map.queryRenderedFeatures(e.point, { layers: ['retailLmpPinsLayer'] });
         if (pinFeatures.length > 0) return;
@@ -474,10 +529,7 @@ export class MapController {
                     .setOffset([0, -10])
                     .setHTML(html)
                     .addTo(this.map);
-                // Defer so this same click's bubble doesn't immediately close the popup
-                setTimeout(() => {
-                    this.map.once('click', () => this.popup.isOpen() && this.popup.remove());
-                }, 0);
+                if (e) e._zonePopupHandled = true;
             }
         }
     }
