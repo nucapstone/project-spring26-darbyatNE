@@ -171,16 +171,27 @@ export class MapController {
         this.currentTimeIndex = 0;
     }
 
-    updateDynamicColorScales() {
-        const dataArray = Array.isArray(this.zoneData) ? this.zoneData : (this.zoneData?.data || []);
+    updateDynamicColorScales(useCurrentView = false) {
+        let retailValues = [];
+        let wholesaleValues = [];
 
-        const retailValues = dataArray
-            .map(row => row?.retail_price)
-            .filter(value => typeof value === 'number' && Number.isFinite(value));
+        if (useCurrentView) {
+            retailValues = Object.values(this.getCurrentRetailPrices() || {})
+                .filter(value => typeof value === 'number' && Number.isFinite(value));
 
-        const wholesaleValues = dataArray
-            .map(row => row?.wholesale_price)
-            .filter(value => typeof value === 'number' && Number.isFinite(value));
+            wholesaleValues = Object.values(this.getCurrentWholesalePrices() || {})
+                .filter(value => typeof value === 'number' && Number.isFinite(value));
+        } else {
+            const dataArray = Array.isArray(this.zoneData) ? this.zoneData : (this.zoneData?.data || []);
+
+            retailValues = dataArray
+                .map(row => row?.retail_price)
+                .filter(value => typeof value === 'number' && Number.isFinite(value));
+
+            wholesaleValues = dataArray
+                .map(row => row?.wholesale_price)
+                .filter(value => typeof value === 'number' && Number.isFinite(value));
+        }
 
         this.retailColorScale = this.buildRangeScale(retailValues, RETAIL_COLOR_SCALE);
         this.wholesaleColorScale = this.buildRangeScale(wholesaleValues, WHOLESALE_COLOR_SCALE);
@@ -190,7 +201,7 @@ export class MapController {
             const retailMax = retailValues.length ? Math.max(...retailValues) : null;
             const wholesaleMin = wholesaleValues.length ? Math.min(...wholesaleValues) : null;
             const wholesaleMax = wholesaleValues.length ? Math.max(...wholesaleValues) : null;
-            console.log('🎚️ Dynamic scale ranges', {
+            console.log(`🎚️ Dynamic scale ranges (${useCurrentView ? 'current-view' : 'dataset'})`, {
                 retail: retailMin !== null ? [retailMin, retailMax] : 'no-data',
                 wholesale: wholesaleMin !== null ? [wholesaleMin, wholesaleMax] : 'no-data'
             });
@@ -350,8 +361,13 @@ export class MapController {
             if (typeof window.refreshZoneListColors === 'function') {
                 window.refreshZoneListColors();
             }
+            this.refreshLegend();
             return;
         }
+
+        // Recompute the scale from the prices currently being shown so the
+        // legend range updates whenever the filter or time window changes.
+        this.updateDynamicColorScales(true);
 
         // 2. Build retail expression with price data
         const retailExpression = ['match', ['get', 'Zone_Code']];
@@ -408,6 +424,7 @@ export class MapController {
         if (typeof window.refreshZoneListColors === 'function') {
             window.refreshZoneListColors();
         }
+        this.refreshLegend();
     }
 
     // 4. Updated to handle the new object-based scales
@@ -422,6 +439,25 @@ export class MapController {
             }
         }
         return scale[scale.length - 1].color;
+    }
+
+    refreshLegend() {
+        const legendBox = document.getElementById('legend');
+        if (!legendBox || typeof buildLegend !== 'function') return;
+
+        legendBox.style.display = 'block';
+
+        if (this.activePriceType === 'locational') {
+            buildLegend(null, null, 'Locational View', {
+                locational: true,
+                zoneColorMap: this.locationalColorMap
+            });
+            return;
+        }
+
+        buildLegend(this.retailColorScale, this.wholesaleColorScale, 'Price (¢/kWh)', {
+            locational: false
+        });
     }
 
     // 5. Updated to pass the correct scale to the legend builder
@@ -450,27 +486,7 @@ export class MapController {
         }
         
         this.renderData();
-
-        const legendBox = document.getElementById('legend');
-        
-        if (type === 'locational') {
-            if (legendBox) legendBox.style.display = 'block';
-            const title = "Locational View";
-            if (typeof buildLegend === 'function') {
-                buildLegend(null, null, title, {
-                    locational: true,
-                    zoneColorMap: this.locationalColorMap
-                });
-            }
-        } else {
-            if (legendBox) legendBox.style.display = 'block';
-            const title = "Price (¢/kWh)";
-            if (typeof buildLegend === 'function') {
-                buildLegend(this.retailColorScale, this.wholesaleColorScale, title, {
-                    locational: false
-                });
-            }
-        }
+        this.refreshLegend();
     }
 
     renderCurrentView() {

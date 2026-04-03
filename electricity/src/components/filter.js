@@ -5,9 +5,9 @@ const pStartYear = params.get("start_year");
 const pEndYear = params.get("end_year");
 const pYear = params.get("year");
 
-// Default to 2024 if nothing exists
-const startYear = pStartYear ? parseInt(pStartYear) : (pYear ? parseInt(pYear) : 2024);
-const endYear = pEndYear ? parseInt(pEndYear) : (pYear ? parseInt(pYear) : 2024);
+// Default to the full available range if nothing exists.
+const startYear = pStartYear ? parseInt(pStartYear) : (pYear ? parseInt(pYear) : 2020);
+const endYear = pEndYear ? parseInt(pEndYear) : (pYear ? parseInt(pYear) : 2026);
 
 // 2. Parse Months
 const pMonths = params.get("months");

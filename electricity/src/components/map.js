@@ -277,10 +277,10 @@ export function initApp() {
                         <hr style="margin: 6px 0; border: none; border-top: 1px solid #ddd;">`;
 
                     if (retailPrice !== null && retailPrice !== undefined) {
-                        content += `<p style="margin: 4px 0; font-weight: bold; color: #2c5aa0;">Retail: ${retailPrice.toFixed(2)}¢/kWh</p>`;
+                        content += `<p style="margin: 4px 0; font-weight: bold; color: #2c5aa0;">Retail: ${(retailPrice * 100).toFixed(1)}¢/kWh</p>`;
                     }
                     if (wholesalePrice !== null && wholesalePrice !== undefined) {
-                        content += `<p style="margin: 4px 0; font-weight: bold; color: #d9534f;">Wholesale: ${wholesalePrice.toFixed(2)}¢/kWh</p>`;
+                        content += `<p style="margin: 4px 0; font-weight: bold; color: #d9534f;">Wholesale: ${(wholesalePrice * 100).toFixed(1)}¢/kWh</p>`;
                     }
                     if (retailPrice === null && wholesalePrice === null) {
                         content += `<p style="margin: 4px 0; color: #888;">No price data available</p>`;
