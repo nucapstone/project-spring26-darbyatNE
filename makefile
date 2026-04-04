@@ -2,7 +2,15 @@
 SHELL := /bin/bash
 
 # 1. ssh tunnel command and path
-TUNNEL_CMD = ssh -f -N -L 5433:127.0.0.1:5432 -L 8001:127.0.0.1:8000 -i ~/.ssh/AWS-Echo-Key.pem ubuntu@3.216.43.184 
+SSH_KEY_PATH ?= $(HOME)/.ssh/AWS-Echo-Key.pem
+TUNNEL_CMD = ssh -o IdentitiesOnly=yes -f -N -L 5433:127.0.0.1:5432 -L 8001:127.0.0.1:8000 -i $(SSH_KEY_PATH) ubuntu@3.216.43.184 
+
+# Verify the SSH key exists before attempting the tunnel
+CHECK_SSH_KEY = @if [ ! -f "$(SSH_KEY_PATH)" ]; then \
+	echo "SSH key not found at $(SSH_KEY_PATH). Place the key there or run: make app SSH_KEY_PATH=$$HOME/.ssh/prof_eval_key"; \
+	exit 1; \
+fi; \
+chmod 600 "$(SSH_KEY_PATH)" 2>/dev/null || true
 
 # Command to find and cleanly kill this specific tunnel if it is already running
 KILL_TUNNEL = pkill -f "[s]sh -f -N -L 5433" 2>/dev/null || true
@@ -47,8 +55,9 @@ ifeq ($(DETECTED_OS),Darwin)
 	@echo "Checking for existing tunnels..."
 	@$(KILL_TUNNEL)
 	$(CHECK_AND_FREE_PORTS)
+	$(CHECK_SSH_KEY)
 	@echo "Detected macOS. Spawning Apple Terminal..."
-	@osascript -e 'tell app "Terminal" to do script "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev"'
+	@osascript -e 'tell app "Terminal" to do script "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source $$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev; exec bash"'
 
 else ifeq ($(DETECTED_OS),Linux)
 ifneq ($(IS_WSL),)
@@ -56,6 +65,7 @@ ifneq ($(IS_WSL),)
 	@$(KILL_TUNNEL)
 	$(CHECK_AND_FREE_PORTS)
 	@echo "Detected WSL. Starting tunnel silently, then running app in this terminal..."
+	$(CHECK_SSH_KEY)
 	@$(TUNNEL_CMD)
 	@source $$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev
 else
@@ -63,6 +73,7 @@ else
 	@$(KILL_TUNNEL)
 	$(CHECK_AND_FREE_PORTS)
 	@echo "Detected Native Linux. Spawning universal terminal..."
+	$(CHECK_SSH_KEY)
 	@x-terminal-emulator -e bash -c "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev; exec bash" || xterm -e bash -c "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source \$$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev; exec bash"
 endif
 

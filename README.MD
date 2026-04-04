@@ -36,13 +36,45 @@ npm install
 cd ..
 ```
 
-### 3. Run the Application
+### 3. Temporary SSH Key Setup for Evaluation
+
+If you were sent a temporary SSH private key separately for evaluation, save it before running the app.
+
+**Option A: save it at the default path used by the Makefile**
+
+```bash
+mkdir -p ~/.ssh
+nano ~/.ssh/AWS-Echo-Key.pem
+```
+
+Then:
+
+1. Paste the full key contents into `nano`.
+2. Save with `Ctrl + O`, press `Enter`, then exit with `Ctrl + X`.
+3. Lock down the file permissions:
+
+```bash
+chmod 600 ~/.ssh/AWS-Echo-Key.pem
+```
+
+**Option B: use a different filename**
+
+```bash
+mkdir -p ~/.ssh
+nano ~/.ssh/prof_eval_key
+chmod 600 ~/.ssh/prof_eval_key
+make app SSH_KEY_PATH=$HOME/.ssh/prof_eval_key
+```
+
+The `makefile` defaults to `~/.ssh/AWS-Echo-Key.pem`, but `SSH_KEY_PATH` can be overridden when needed.
+
+### 4. Run the Application
 
 ```bash
 make app
 ```
 
-### 4. Create a `.env` file for the backend
+### 5. Create a `.env` file for the backend
 
 Create `.env` at the repository root with the database settings used by the FastAPI backend:
 
