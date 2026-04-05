@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.13.4">
+<title>Infrastructure Setup | PJM LMP Visualization</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.b050d634.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.b050d634.css">
+<link rel="modulepreload" href="./_observablehq/client.16b578fc.js">
+<link rel="modulepreload" href="./_observablehq/runtime.607a8173.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.277aeab8.js">
+
+        <link rel="icon" href="./_file/img/lmp_icon.7d29060b.png" type="image/png">
+        <meta property="og:image" content="/img/observable.png">
+        
+<script type="module">
+
+import "./_observablehq/client.16b578fc.js";
+
+</script>
+</head>
+<body>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link"><a href="./">PJM LMP Visualization</a></li>
+  </ol>
+  <ol>
+    <li class="observablehq-link"><a href="./picker">Build A Filter</a></li>
+  </ol>
+</nav>
+<script>{const e=document.querySelector("#observablehq-sidebar"),o=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?o.checked=r==="true":o.indeterminate=!0;for(const t of document.querySelectorAll("#observablehq-sidebar summary")){const s=t.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${t.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<div id="observablehq-center">
+<aside id="observablehq-toc" data-selector="h1:not(:first-of-type)[id], h2:first-child[id], :not(h1) + h2[id]">
+<nav>
+<div>Contents</div>
+<ol>
+<li class="observablehq-secondary-link"><a href="#1-what-make-app-depends-on">1. What make app depends on</a></li>
+<li class="observablehq-secondary-link"><a href="#2-repository-layout-relevant-to-startup">2. Repository layout relevant to startup</a></li>
+<li class="observablehq-secondary-link"><a href="#3-clone-the-repository">3. Clone the repository</a></li>
+<li class="observablehq-secondary-link"><a href="#4-create-the-conda-environment">4. Create the Conda environment</a></li>
+<li class="observablehq-secondary-link"><a href="#5-install-java-script-dependencies">5. Install JavaScript dependencies</a></li>
+<li class="observablehq-secondary-link"><a href="#6-create-the-env-file-for-the-backend">6. Create the .env file for the backend</a></li>
+<li class="observablehq-secondary-link"><a href="#7-verify-the-ssh-tunnel-command-in-the-makefile">7. Verify the SSH tunnel command in the Makefile</a></li>
+<li class="observablehq-secondary-link"><a href="#8-run-the-application">8. Run the application</a></li>
+<li class="observablehq-secondary-link"><a href="#9-stop-the-ssh-tunnel">9. Stop the SSH tunnel</a></li>
+<li class="observablehq-secondary-link"><a href="#10-troubleshooting">10. Troubleshooting</a></li>
+<li class="observablehq-secondary-link"><a href="#11-data-population-status">11. Data population status</a></li>
+</ol>
+</nav>
+</aside>
+<main id="observablehq-main" class="observablehq">
+<h1 id="environment-setup-for-reproducing-the-app" tabindex="-1"><a class="observablehq-header-anchor" href="#environment-setup-for-reproducing-the-app">Environment Setup for Reproducing the App</a></h1>
+<p>This document is the practical setup guide for developers who need to recreate the runtime environment and launch the application with <code>make app</code>.</p>
+<p>It focuses on the environment and infrastructure needed to run the current repository as it exists today. Some data-ingestion and architecture notes elsewhere in the project are still evolving; this guide is intentionally centered on the shortest reliable path to getting the app running.</p>
+<h2 id="1-what-make-app-depends-on" tabindex="-1"><a class="observablehq-header-anchor" href="#1-what-make-app-depends-on">1. What <code>make app</code> depends on</a></h2>
+<p>Before <code>make app</code> can succeed, the following must already be in place:</p>
+<ol>
+<li>Git is installed.</li>
+<li>Conda or Miniconda is installed.</li>
+<li>Node.js 18+ and npm are installed.</li>
+<li>OpenSSH is installed.</li>
+<li><code>lsof</code> is installed so the Makefile can free ports before startup.</li>
+<li>A Conda environment named <code>lmp-lite</code> exists.</li>
+<li>Frontend dependencies are installed in <code>electricity/</code>.</li>
+<li>Database credentials are available through a <code>.env</code> file.</li>
+<li>The SSH tunnel defined in <a href="../../makefile">makefile</a> points to a valid host and private key.</li>
+</ol>
+<h3 id="dependency-inventory-used-for-this-setup" tabindex="-1"><a class="observablehq-header-anchor" href="#dependency-inventory-used-for-this-setup">Dependency inventory used for this setup</a></h3>
+<p>The dependency files were trimmed based on imports scanned across this repository.</p>
+<p>Python packages in <a href="../environment.yml">environment.yml</a>:</p>
+<ul>
+<li><code>fastapi</code>, <code>uvicorn</code>, <code>sqlalchemy</code>, <code>pydantic</code>, <code>python-dotenv</code></li>
+<li><code>requests</code>, <code>pymysql</code>, <code>psycopg2</code>, <code>mysql-connector-python</code></li>
+<li><code>pandas</code>, <code>geopandas</code>, <code>shapely</code>, <code>matplotlib</code>, <code>openpyxl</code></li>
+</ul>
+<p>NPM packages in <a href="../../electricity/package.json">package.json</a>:</p>
+<ul>
+<li>Runtime: <code>d3</code>, <code>maplibre-gl</code>, <code>@observablehq/plot</code>, <code>@turf/turf</code></li>
+<li>Tooling: <code>@observablehq/framework</code>, <code>concurrently</code>, <code>rimraf</code></li>
+</ul>
+<h2 id="2-repository-layout-relevant-to-startup" tabindex="-1"><a class="observablehq-header-anchor" href="#2-repository-layout-relevant-to-startup">2. Repository layout relevant to startup</a></h2>
+<p>These are the main files involved in local startup:</p>
+<ul>
+<li><a href="../../makefile">makefile</a>: launches the tunnel and both app processes.</li>
+<li><a href="../environment.yml">environment.yml</a>: Conda environment definition for Python dependencies.</li>
+<li><a href="../../electricity/package.json">package.json</a>: frontend and backend npm scripts.</li>
+<li><a href="../../electricity/api/backend.py">backend.py</a>: FastAPI backend, including <code>.env</code> loading and database connection setup.</li>
+</ul>
+<h2 id="3-clone-the-repository" tabindex="-1"><a class="observablehq-header-anchor" href="#3-clone-the-repository">3. Clone the repository</a></h2>
+<pre data-language="bash"><code class="language-bash">git <span class="hljs-built_in">clone</span> https://github.com/nudataviz/electricity-price-comparison-tool
+<span class="hljs-built_in">cd</span> electricity-price-comparison-tool
+</code></pre>
+<h2 id="4-create-the-conda-environment" tabindex="-1"><a class="observablehq-header-anchor" href="#4-create-the-conda-environment">4. Create the Conda environment</a></h2>
+<p>The environment file already exists in the repository and should be used directly.</p>
+<pre data-language="bash"><code class="language-bash">conda <span class="hljs-built_in">env</span> create -f electricity/environment.yml
+conda activate lmp-lite
+</code></pre>
+<p>This setup creates a separate lightweight environment (<code>lmp-lite</code>) and does not modify an existing <code>lmp-env</code>.</p>
+<p>If you already created the environment earlier and dependencies changed, update it with:</p>
+<pre data-language="bash"><code class="language-bash">conda <span class="hljs-built_in">env</span> update -f electricity/environment.yml --prune
+</code></pre>
+<p>After updating Conda dependencies, reinstall JavaScript packages to keep lockfiles and local modules aligned:</p>
+<pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> electricity
+npm install
+<span class="hljs-built_in">cd</span> ..
+</code></pre>
+<h2 id="5-install-java-script-dependencies" tabindex="-1"><a class="observablehq-header-anchor" href="#5-install-java-script-dependencies">5. Install JavaScript dependencies</a></h2>
+<p>The Observable frontend and concurrent startup scripts can be found in <code>electricity/</code>.</p>
+<pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> electricity
+npm install
+<span class="hljs-built_in">cd</span> ..
+</code></pre>
+<h2 id="6-create-the-env-file-for-the-backend" tabindex="-1"><a class="observablehq-header-anchor" href="#6-create-the-env-file-for-the-backend">6. Create the <code>.env</code> file for the backend</a></h2>
+<p>The backend reads environment variables with <code>load_dotenv()</code>. The simplest approach is to create a <code>.env</code> file at the repository root.</p>
+<p>Add the following keys:</p>
+<pre data-language="ini"><code class="language-ini"><span class="hljs-attr">DB_USER</span>=your_database_user
+<span class="hljs-attr">DB_PASSWORD</span>=your_database_password
+<span class="hljs-attr">DB_HOST</span>=<span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>
+<span class="hljs-attr">DB_PORT</span>=<span class="hljs-number">5433</span>
+<span class="hljs-attr">DB_NAME</span>=your_database_name
+</code></pre>
+<p>Notes:</p>
+<ul>
+<li>The backend currently builds a PostgreSQL connection string from these values.</li>
+<li><code>DB_PORT=5433</code> is used because the Makefile SSH tunnel forwards local port <code>5433</code> to the remote database server.</li>
+<li>If your tunnel target or local forwarding port differs, update both the Makefile and <code>.env</code> accordingly.</li>
+</ul>
+<h2 id="7-verify-the-ssh-tunnel-command-in-the-makefile" tabindex="-1"><a class="observablehq-header-anchor" href="#7-verify-the-ssh-tunnel-command-in-the-makefile">7. Verify the SSH tunnel command in the Makefile</a></h2>
+<p>The <code>app</code> target relies on <code>TUNNEL_CMD</code> in <a href="../../makefile">makefile</a>.</p>
+<p>Check all of the following before trying to launch:</p>
+<ul>
+<li>the SSH private key file exists,</li>
+<li>the file permissions on the key are valid,</li>
+<li>the remote host is reachable,</li>
+<li>the remote database host/port forwarding is correct,</li>
+<li>the local forwarded database port matches the <code>.env</code> file.</li>
+</ul>
+<p>The Makefile currently also:</p>
+<ul>
+<li>closes an existing matching SSH tunnel if one is already running,</li>
+<li>checks whether ports <code>3000</code> and <code>8000</code> are busy,</li>
+<li>kills processes holding those ports before startup.</li>
+</ul>
+<h2 id="8-run-the-application" tabindex="-1"><a class="observablehq-header-anchor" href="#8-run-the-application">8. Run the application</a></h2>
+<p>From the repository root:</p>
+<pre data-language="bash"><code class="language-bash">make app
+</code></pre>
+<p>On success, this starts:</p>
+<ul>
+<li>the Observable frontend on <code>http://127.0.0.1:3000</code>,</li>
+<li>the FastAPI backend on <code>http://127.0.0.1:8000</code>.</li>
+</ul>
+<h2 id="9-stop-the-ssh-tunnel" tabindex="-1"><a class="observablehq-header-anchor" href="#9-stop-the-ssh-tunnel">9. Stop the SSH tunnel</a></h2>
+<p>To close the tunnel manually:</p>
+<pre data-language="bash"><code class="language-bash">make stop
+</code></pre>
+<h2 id="10-troubleshooting" tabindex="-1"><a class="observablehq-header-anchor" href="#10-troubleshooting">10. Troubleshooting</a></h2>
+<h3 id="make-app-exits-immediately" tabindex="-1"><a class="observablehq-header-anchor" href="#make-app-exits-immediately"><code>make app</code> exits immediately</a></h3>
+<p>Check <a href="../../makefile">makefile</a> first. The most common causes are:</p>
+<ul>
+<li>invalid SSH key path,</li>
+<li>unreachable SSH host,</li>
+<li>Conda not available in the current shell,</li>
+<li>missing <code>npm</code> dependencies in <code>electricity/</code>.</li>
+</ul>
+<h3 id="backend-fails-to-start" tabindex="-1"><a class="observablehq-header-anchor" href="#backend-fails-to-start">Backend fails to start</a></h3>
+<p>Check the following:</p>
+<ul>
+<li><code>.env</code> exists and contains <code>DB_USER</code>, <code>DB_PASSWORD</code>, <code>DB_HOST</code>, <code>DB_PORT</code>, and <code>DB_NAME</code>,</li>
+<li>the database is reachable through the configured SSH tunnel,</li>
+<li>the Conda environment was created from <a href="../environment.yml">environment.yml</a>.</li>
+<li>if needed, refresh the environment with <code>conda env update -f electricity/environment.yml --prune</code>.</li>
+</ul>
+<h3 id="frontend-fails-to-start" tabindex="-1"><a class="observablehq-header-anchor" href="#frontend-fails-to-start">Frontend fails to start</a></h3>
+<p>Run:</p>
+<pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> electricity
+npm install
+</code></pre>
+<p>Then retry <code>make app</code> from the repository root.</p>
+<h3 id="ports-3000-or-8000-are-already-in-use" tabindex="-1"><a class="observablehq-header-anchor" href="#ports-3000-or-8000-are-already-in-use">Ports 3000 or 8000 are already in use</a></h3>
+<p>The Makefile now attempts to free those ports automatically. If startup still fails, run:</p>
+<pre data-language="bash"><code class="language-bash">lsof -i :3000 -i :8000
+</code></pre>
+<p>and verify that no unrelated protected process is holding those ports.</p>
+<h2 id="11-data-population-status" tabindex="-1"><a class="observablehq-header-anchor" href="#11-data-population-status">11. Data population status</a></h2>
+<p>Running the UI is not the same as reproducing the full historical dataset.</p>
+<p>The application can start once the environment, tunnel, and backend connection are configured, but the visualizations still depend on the underlying PostgreSQL database already containing the expected tables and data.</p>
+<p>The ingestion scripts remain in <a href="../hydrate">hydrate</a>, but this guide does not attempt to present them as fully polished end-user setup steps yet. That material should be treated as a separate infrastructure workflow.</p>
+</main>
+<footer id="observablehq-footer">
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-04T22:37:03">Apr 4, 2026</a>.</div>
+</footer>
+</div>
+</body>
+</html>

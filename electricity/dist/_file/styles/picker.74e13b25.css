@@ -1,0 +1,132 @@
+/* src/styles/picker.css */
+
+.picker-container {
+  font-family: system-ui, -apple-system, sans-serif;
+  max-width: 800px;
+}
+
+.picker-control-frame {
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* --- Typography --- */
+.picker-label {
+  font-weight: bold;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.picker-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* --- Month Selector (New) --- */
+.picker-month-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* 6 columns x 2 rows */
+  gap: 8px;
+  margin-bottom: 25px;
+}
+
+.picker-month-btn {
+  padding: 8px 0;
+  border: 1px solid #007bff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  background-color: white;
+  color: #007bff;
+}
+
+.picker-month-btn:hover {
+  background-color: #e7f1ff;
+}
+
+.picker-month-btn.active {
+  background-color: #007bff;
+  color: white;
+}
+
+/* --- Year Slider Section (New) --- */
+.picker-year-section {
+  margin-bottom: 15px;
+}
+
+.picker-year-display {
+  font-size: 14px;
+  font-weight: bold;
+  color: #007bff;
+}
+
+/* --- Action Buttons --- */
+.picker-action-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.picker-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.picker-btn-secondary {
+  background-color: white;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+.picker-btn-secondary:hover {
+  background-color: #f2f2f2;
+}
+
+.picker-btn-primary {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  font-weight: bold;
+}
+
+.picker-btn-primary:hover {
+  background-color: #0056b3;
+}
+
+/* --- Saved Filters --- */
+.picker-saved-section {
+  margin-top: 15px;
+  border-top: 1px solid #eee;
+  padding-top: 15px;
+}
+
+.picker-saved-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-bottom: 8px;
+  border: 1px solid transparent;
+}
+
+.picker-saved-item:hover {
+  border-color: #ddd;
+}

@@ -15,8 +15,8 @@ chmod 600 "$(SSH_KEY_PATH)" 2>/dev/null || true
 # Command to find and cleanly kill this specific tunnel if it is already running
 KILL_TUNNEL = pkill -f "[s]sh -f -N -L 5433" 2>/dev/null || true
 
-# App ports that must be free before startup
-APP_PORTS = 3000 8000
+# App and SSH tunnel ports that must be free before startup
+APP_PORTS = 3000 8000 5433 8001
 
 # Check each app port and stop any process currently listening on it
 CHECK_AND_FREE_PORTS = @echo "Checking app ports: $(APP_PORTS)"; \

@@ -51,7 +51,7 @@ Then:
 
 1. Paste the full key contents into `nano`.
 2. Save with `Ctrl + O`, press `Enter`, then exit with `Ctrl + X`.
-3. Lock down the file permissions:
+3. Lock down the file permissions by running the following command in the terminal:
 
 ```bash
 chmod 600 ~/.ssh/AWS-Echo-Key.pem

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.13.4">
+<title>Architecture | PJM LMP Visualization</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.b050d634.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.b050d634.css">
+<link rel="modulepreload" href="./_observablehq/client.16b578fc.js">
+<link rel="modulepreload" href="./_observablehq/runtime.607a8173.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.277aeab8.js">
+
+        <link rel="icon" href="./_file/img/lmp_icon.7d29060b.png" type="image/png">
+        <meta property="og:image" content="/img/observable.png">
+        
+<script type="module">
+
+import "./_observablehq/client.16b578fc.js";
+
+</script>
+</head>
+<body>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link"><a href="./">PJM LMP Visualization</a></li>
+  </ol>
+  <ol>
+    <li class="observablehq-link"><a href="./picker">Build A Filter</a></li>
+  </ol>
+</nav>
+<script>{const e=document.querySelector("#observablehq-sidebar"),o=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?o.checked=r==="true":o.indeterminate=!0;for(const t of document.querySelectorAll("#observablehq-sidebar summary")){const s=t.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${t.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<div id="observablehq-center">
+<aside id="observablehq-toc" data-selector="h1:not(:first-of-type)[id], h2:first-child[id], :not(h1) + h2[id]">
+<nav>
+<div>Contents</div>
+<ol>
+<li class="observablehq-secondary-link"><a href="#1-system-overview">1. System Overview</a></li>
+<li class="observablehq-secondary-link"><a href="#2-runtime-flow">2. Runtime Flow</a></li>
+<li class="observablehq-secondary-link"><a href="#3-major-components">3. Major Components</a></li>
+<li class="observablehq-secondary-link"><a href="#4-frontend-structure">4. Frontend Structure</a></li>
+<li class="observablehq-secondary-link"><a href="#5-backend-structure">5. Backend Structure</a></li>
+<li class="observablehq-secondary-link"><a href="#6-data-and-hydration-scripts">6. Data and Hydration Scripts</a></li>
+<li class="observablehq-secondary-link"><a href="#7-external-dependencies">7. External Dependencies</a></li>
+<li class="observablehq-secondary-link"><a href="#8-repository-areas-relevant-to-reproduction">8. Repository Areas Relevant to Reproduction</a></li>
+<li class="observablehq-secondary-link"><a href="#9-current-boundaries-and-incomplete-areas">9. Current Boundaries and Incomplete Areas</a></li>
+</ol>
+</nav>
+</aside>
+<main id="observablehq-main" class="observablehq">
+<h1 id="application-architecture" tabindex="-1"><a class="observablehq-header-anchor" href="#application-architecture">Application Architecture</a></h1>
+<p>This document describes the current runtime architecture of the Electricity Retail/Wholesale Comparison Tool and how the major pieces fit together.</p>
+<p>It is intended to explain how the checked-in application runs today. For environment creation and launch instructions, use <a href="./SETUP.md">SETUP.md</a>. For the quickest startup path, use the top-level <a href="../../README.MD">README.MD</a>.</p>
+<h2 id="1-system-overview" tabindex="-1"><a class="observablehq-header-anchor" href="#1-system-overview">1. System Overview</a></h2>
+<p>The application is split into four main layers:</p>
+<ol>
+<li>Observable Framework frontend for the UI and page structure.</li>
+<li>MapLibre-based map rendering and interactive overlays.</li>
+<li>FastAPI backend for API endpoints and database access.</li>
+<li>PostgreSQL-backed data store accessed through SQLAlchemy.</li>
+</ol>
+<p>At runtime, the frontend talks to the backend over local HTTP, and the backend queries the database using credentials loaded from <code>.env</code>.</p>
+<h2 id="2-runtime-flow" tabindex="-1"><a class="observablehq-header-anchor" href="#2-runtime-flow">2. Runtime Flow</a></h2>
+<p>The normal local startup path is:</p>
+<ol>
+<li><code>make app</code> is run from the repository root.</li>
+<li>The Makefile opens an SSH tunnel for the database and frees local app ports if needed.</li>
+<li>The Conda environment <code>lmp-env</code> is activated.</li>
+<li>The working directory changes into <code>electricity/</code>.</li>
+<li><code>npm run dev</code> launches both:
+<ul>
+<li>the Observable frontend on port <code>3000</code></li>
+<li>the FastAPI backend on port <code>8000</code></li>
+</ul>
+</li>
+<li>Frontend requests under <code>/api</code> are proxied to the backend.</li>
+</ol>
+<h2 id="3-major-components" tabindex="-1"><a class="observablehq-header-anchor" href="#3-major-components">3. Major Components</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Layer</th>
+<th style="text-align:left">Technology</th>
+<th style="text-align:left">Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">Frontend UI</td>
+<td style="text-align:left">Observable Framework, JavaScript, CSS</td>
+<td style="text-align:left">Page structure, filter controls, legends, sidebar, and documentation pages</td>
+</tr>
+<tr>
+<td style="text-align:left">Mapping</td>
+<td style="text-align:left">MapLibre GL, D3</td>
+<td style="text-align:left">Service territory rendering, labels, pin layers, hover and selection behavior</td>
+</tr>
+<tr>
+<td style="text-align:left">Backend API</td>
+<td style="text-align:left">FastAPI, SQLAlchemy</td>
+<td style="text-align:left">Serves service territory geometry, retail/wholesale data, and filtered aggregates</td>
+</tr>
+<tr>
+<td style="text-align:left">Data Store</td>
+<td style="text-align:left">PostgreSQL</td>
+<td style="text-align:left">Stores service territories, PJM pricing data, and derived monthly values</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-frontend-structure" tabindex="-1"><a class="observablehq-header-anchor" href="#4-frontend-structure">4. Frontend Structure</a></h2>
+<p>The frontend entry point is <a href="./index.md">index.md</a>. The most important supporting files are:</p>
+<ul>
+<li><a href="./components/map.js">components/map.js</a>: map initialization, layer creation, sidebar interactions, and view toggles.</li>
+<li><a href="./managers/app_controller.js">managers/app_controller.js</a>: controller logic for loading data, computing map colors, and switching views.</li>
+<li><a href="./components/ui.js">components/ui.js</a>: legends, filter display, and supporting UI helpers.</li>
+<li><a href="./components/filter.js">components/filter.js</a>: current filter state and persisted query parameters.</li>
+<li><a href="./components/picker.js">components/picker.js</a>: date/month selection UI.</li>
+<li><a href="./styles/main.css">styles/main.css</a>: application layout and visual styling.</li>
+</ul>
+<h2 id="5-backend-structure" tabindex="-1"><a class="observablehq-header-anchor" href="#5-backend-structure">5. Backend Structure</a></h2>
+<p>The backend entry point is <a href="../../electricity/api/backend.py">../../electricity/api/backend.py</a>.</p>
+<p>Key backend responsibilities:</p>
+<ul>
+<li>loading environment variables with <code>load_dotenv()</code>,</li>
+<li>building the PostgreSQL connection string,</li>
+<li>exposing API endpoints consumed by the frontend,</li>
+<li>querying service territory geometries and pricing aggregates.</li>
+</ul>
+<p>The frontend proxy is configured in <a href="../../electricity/observablehq.config.js">../../electricity/observablehq.config.js</a>, where <code>/api</code> is forwarded to <code>http://127.0.0.1:8000</code> by default or to <code>BACKEND_URL</code> if provided.</p>
+<h2 id="6-data-and-hydration-scripts" tabindex="-1"><a class="observablehq-header-anchor" href="#6-data-and-hydration-scripts">6. Data and Hydration Scripts</a></h2>
+<p>The data ingestion and maintenance scripts live in <a href="./hydrate">hydrate</a>.</p>
+<p>These scripts are part of the broader infrastructure workflow, not the minimum path required to launch the application UI. They are used to populate and maintain the database tables the app expects.</p>
+<p>Examples include:</p>
+<ul>
+<li>historical LMP ingestion scripts,</li>
+<li>retail price update scripts,</li>
+<li>status and watchdog utilities,</li>
+<li>database maintenance helpers.</li>
+</ul>
+<p>This distinction matters:</p>
+<ul>
+<li>launching the app requires the environment, backend, and database connection to be configured,</li>
+<li>fully reproducing the dataset additionally requires populated source tables and ingestion workflows.</li>
+</ul>
+<h2 id="7-external-dependencies" tabindex="-1"><a class="observablehq-header-anchor" href="#7-external-dependencies">7. External Dependencies</a></h2>
+<p>The application depends on several external systems:</p>
+<ul>
+<li>a reachable PostgreSQL database,</li>
+<li>SSH access to the remote host used by the Makefile tunnel,</li>
+<li>PJM data sources for ingestion workflows,</li>
+<li>a map tile provider for the basemap.</li>
+</ul>
+<p>Current note:</p>
+<ul>
+<li>the checked-in map configuration currently references a MapTiler style URL directly in <a href="./components/map.js">components/map.js</a> rather than reading a map key from <code>.env</code>. That is part of the current code path and should be treated as an implementation detail that may be externalized later.</li>
+</ul>
+<h2 id="8-repository-areas-relevant-to-reproduction" tabindex="-1"><a class="observablehq-header-anchor" href="#8-repository-areas-relevant-to-reproduction">8. Repository Areas Relevant to Reproduction</a></h2>
+<p>These files are the most important for a new developer trying to understand or reproduce the app:</p>
+<ul>
+<li><a href="../../README.MD">../../README.MD</a>: top-level quick start.</li>
+<li><a href="./SETUP.md">SETUP.md</a>: environment and startup preparation.</li>
+<li><a href="./USER_GUIDE.md">USER_GUIDE.md</a>: domain and UI usage context.</li>
+<li><a href="../../makefile">../../makefile</a>: startup automation and SSH tunnel behavior.</li>
+<li><a href="../../electricity/environment.yml">../../electricity/environment.yml</a>: Conda environment definition.</li>
+<li><a href="../../electricity/package.json">../../electricity/package.json</a>: npm scripts and JavaScript dependencies.</li>
+</ul>
+<h2 id="9-current-boundaries-and-incomplete-areas" tabindex="-1"><a class="observablehq-header-anchor" href="#9-current-boundaries-and-incomplete-areas">9. Current Boundaries and Incomplete Areas</a></h2>
+<p>Some project documentation and infrastructure workflows are still evolving.</p>
+<p>In particular:</p>
+<ul>
+<li>the runtime startup path is cleaner than the full ingestion/rebuild story,</li>
+<li>some ingestion scripts are operational but not yet documented as a polished end-user workflow,</li>
+<li>some architecture details in older notes may lag behind the current PostgreSQL and <code>make app</code> flow.</li>
+</ul>
+<p>This file should therefore be read as a current-state architecture summary, not as a claim that every infrastructure workflow has already been packaged for first-time users.</p>
+</main>
+<footer id="observablehq-footer">
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-04T22:37:03">Apr 4, 2026</a>.</div>
+</footer>
+</div>
+</body>
+</html>
