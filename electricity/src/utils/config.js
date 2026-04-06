@@ -7,16 +7,16 @@ export const API_BASE_URL = "http://localhost:8000";
 
 // --- NEW SCALES ---
 
-// Heat palette: green -> yellow -> orange -> red
+// Diverging palette: blue -> light gray -> red
 const PRICE_COLORS = [
-    '#1a9850', // 0: deep green
-    '#66bd63', // 1: green
-    '#a6d96a', // 2: light green
-    '#d9ef8b', // 3: yellow-green
-    '#fee08b', // 4: yellow
-    '#fdae61', // 5: orange
-    '#f46d43', // 6: orange-red
-    '#d73027'  // 7: red
+    '#2166ac', // 0: deep blue
+    '#4393c3', // 1: blue
+    '#92c5de', // 2: light blue
+    '#d1e5f0', // 3: pale blue
+    '#f7f7f7', // 4: light gray midpoint
+    '#fddbc7', // 5: pale red
+    '#ef8a62', // 6: red-orange
+    '#b2182b'  // 7: deep red
 ];
 
 // Retail fits approximately 0.13 -> 0.28

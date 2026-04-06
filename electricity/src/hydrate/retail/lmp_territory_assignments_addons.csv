@@ -1,7 +1,0 @@
-﻿pnode_id,service_territory,zone,name,type,voltage,latitude,longitude,location
-1348250150,PIKE COUNTY LIGHT & POWER CO,PPL,POCONO,LOAD,69 KV,41.25,-75.1,"Likely in Pocono area, Pike County or nearby"
-2156112724,PIKE COUNTY LIGHT & POWER CO,PPL,MTPOCONO,LOAD,69 KV,41.12,-75.36,"Mount Pocono, near Pike County"
-2156119567,PIKE COUNTY LIGHT & POWER CO,PPL,HAWLEYPL,LOAD,69 KV,41.48,-75.18,"Hawley, PA, in Pike County"
-2156119127,PIKE COUNTY LIGHT & POWER CO,PPL,HONSDALE,LOAD,69 KV,41.57,-75.26,"Honesdale, PA, near Pike County (Wayne County)"
-2156119352,PIKE COUNTY LIGHT & POWER CO,PPL,KIMBLES,LOAD,69 KV,41.38,-74.93,"Kimble, PA, in Pike County"
-2156119158,PIKE COUNTY LIGHT & POWER CO,PPL,TAFTON,LOAD,69 KV,41.4,-75.18,"Tafton, PA, in Pike County"

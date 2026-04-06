@@ -10,6 +10,10 @@ export class MapController {
 
         this.popup = null;
         this.congestionHelpPopup = null;
+        this.activeZonePopupContext = null;
+        this.pinPopup = null;
+        this.activePinPopupContext = null;
+        this.buildPinPopupHTML = null;
         
         // Data State
         this.zoneData = [];
@@ -42,6 +46,9 @@ export class MapController {
             closeButton: true,
             closeOnClick: false,  // Must be false — closeOnClick:true self-closes on the creating click
             className: 'zone-hover-popup'
+        });
+        this.popup.on('close', () => {
+            this.activeZonePopupContext = null;
         });
 
         // Hover: cursor feedback only, no popup
@@ -337,6 +344,35 @@ export class MapController {
         return this.wholesalePrices || {};
     }
 
+    getCurrentContextLabel() {
+        if (this.showAverageView) {
+            return 'Average over selected period';
+        }
+        return this.monthlyFrames[this.currentTimeIndex]?.label || null;
+    }
+
+    refreshOpenPopups() {
+        if (this.activeZonePopupContext && this.popup?.isOpen()) {
+            const { zoneName, lngLat } = this.activeZonePopupContext;
+            let price = null;
+
+            if (this.activePriceType === 'retail') {
+                price = this.getCurrentRetailPrices()?.[zoneName] ?? null;
+            } else if (this.activePriceType === 'wholesale') {
+                price = this.getCurrentWholesalePrices()?.[zoneName] ?? null;
+            }
+
+            const html = this.createZonePopupHTML(zoneName, this.activePriceType, price, this.getCurrentContextLabel());
+            this.popup.setLngLat(lngLat).setHTML(html);
+        }
+
+        if (this.activePinPopupContext && this.pinPopup?.isOpen() && typeof this.buildPinPopupHTML === 'function') {
+            const { coordinates, props } = this.activePinPopupContext;
+            const html = this.buildPinPopupHTML(props);
+            this.pinPopup.setLngLat(coordinates).setHTML(html);
+        }
+    }
+
     // ==========================================
     // RENDERING & VISUALS
     // ==========================================
@@ -361,6 +397,7 @@ export class MapController {
                 window.refreshZoneListColors();
             }
             this.refreshLegend();
+            this.refreshOpenPopups();
             return;
         }
 
@@ -424,6 +461,7 @@ export class MapController {
             window.refreshZoneListColors();
         }
         this.refreshLegend();
+        this.refreshOpenPopups();
     }
 
     // 4. Updated to handle the new object-based scales
@@ -533,17 +571,20 @@ export class MapController {
             // Show zone price popup on click in price view only
             if (this.activePriceType !== 'locational') {
                 let price = null;
-                if (this.activePriceType === 'retail' && this.retailPrices) {
-                    price = this.retailPrices[clickedZone];
-                } else if (this.activePriceType === 'wholesale' && this.wholesalePrices) {
-                    price = this.wholesalePrices[clickedZone];
+                if (this.activePriceType === 'retail') {
+                    price = this.getCurrentRetailPrices()?.[clickedZone] ?? null;
+                } else if (this.activePriceType === 'wholesale') {
+                    price = this.getCurrentWholesalePrices()?.[clickedZone] ?? null;
                 }
-                const html = this.createZonePopupHTML(clickedZone, this.activePriceType, price);
+                const contextLabel = this.getCurrentContextLabel();
+                const html = this.createZonePopupHTML(clickedZone, this.activePriceType, price, contextLabel);
+                this.activeZonePopupContext = { zoneName: clickedZone, lngLat: e.lngLat };
                 this.popup
                     .setLngLat(e.lngLat)
                     .setOffset([0, -10])
                     .setHTML(html)
                     .addTo(this.map);
+                this.activeZonePopupContext = { zoneName: clickedZone, lngLat: e.lngLat };
                 if (e) e._zonePopupHandled = true;
             }
         }
@@ -560,9 +601,9 @@ export class MapController {
         this.map.getCanvas().style.cursor = features.length > 0 ? 'pointer' : '';
     }
 
-    createZonePopupHTML(zoneName, priceType, value) {
+    createZonePopupHTML(zoneName, priceType, value, contextLabel = null) {
         // Convert $/kWh to cents/kWh and format
-        const formattedPrice = value !== null ? `${(value * 100).toFixed(1)}¢` : 'N/A';
+        const formattedPrice = value !== null ? `${(value * 100).toFixed(2)}¢` : 'N/A';
         
         let label = 'View';
         if (priceType === 'locational') label = 'Locational View';
@@ -576,6 +617,7 @@ export class MapController {
         return `
             <div class="zone-popup-content" style="font-family: sans-serif; padding: 5px;">
                 <strong class="zone-popup-header" style="display:block; margin-bottom:4px; font-size:13px;">${zoneName}</strong>
+                ${contextLabel ? `<div style="font-size:11px; color:#666; margin-bottom:4px;"><em>${contextLabel}</em></div>` : ''}
                 <div style="font-size:12px;">
                     <span class="zone-popup-label" style="color:#666;">${label}:</span> 
                     ${priceDisplay}
