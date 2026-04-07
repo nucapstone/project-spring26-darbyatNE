@@ -1,6 +1,6 @@
 import maplibregl from "../../_npm/maplibre-gl@5.15.0/4c3c9e9c.js";
 // 1. Import the new scales from config
-import { API_BASE_URL, RETAIL_COLOR_SCALE, WHOLESALE_COLOR_SCALE } from "../utils/config.fb59f93a.js";
+import { API_BASE_URL, RETAIL_COLOR_SCALE, WHOLESALE_COLOR_SCALE } from "../utils/config.d6642fe5.js";
 import { displayCurrentFilter, buildLegend } from "../components/ui.1db8755a.js";
 
 export class MapController {

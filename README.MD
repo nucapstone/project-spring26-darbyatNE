@@ -36,11 +36,21 @@ npm install
 cd ..
 ```
 
-### 3. Temporary SSH Key Setup for Evaluation
+### 3. Configure the SSH key used by the `Makefile`
 
-If you were sent a temporary SSH private key separately for evaluation, save it before running the app.
+The project `Makefile` already handles the SSH tunnel and app startup. By default it looks for the SSH private key at:
 
-**Option A: save it at the default path used by the Makefile**
+```bash
+$HOME/.ssh/AWS-Echo-Key.pem
+```
+
+If your key is already saved there, you can go straight to `make app`.
+
+If you were sent a temporary evaluation key privately, you have **two supported options**:
+
+#### Option A — use the default path expected by the `Makefile`
+
+Save the key as `~/.ssh/AWS-Echo-Key.pem`:
 
 ```bash
 mkdir -p ~/.ssh
@@ -49,15 +59,23 @@ nano ~/.ssh/AWS-Echo-Key.pem
 
 Then:
 
-1. Paste the full key contents into `nano`.
+1. Paste the full private key contents into `nano`.
 2. Save with `Ctrl + O`, press `Enter`, then exit with `Ctrl + X`.
-3. Lock down the file permissions by running the following command in the terminal:
+3. Set the required permissions:
 
 ```bash
 chmod 600 ~/.ssh/AWS-Echo-Key.pem
 ```
 
-**Option B: use a different filename**
+With the key at the default path, the existing `Makefile` works as-is:
+
+```bash
+make app
+```
+
+#### Option B — keep a different key filename and override `SSH_KEY_PATH`
+
+If you prefer to save the temporary key under another name such as `~/.ssh/prof_eval_key`, run:
 
 ```bash
 mkdir -p ~/.ssh
@@ -66,25 +84,24 @@ chmod 600 ~/.ssh/prof_eval_key
 make app SSH_KEY_PATH=$HOME/.ssh/prof_eval_key
 ```
 
-The `makefile` defaults to `~/.ssh/AWS-Echo-Key.pem`, but `SSH_KEY_PATH` can be overridden when needed.
+### 4. Save the provided `.env` file at the repository root
 
-### 4. Run the Application
+Place the `.env` file you were sent privately in the root of the cloned repository (the same directory as `README.MD` and `makefile`). The required credentials are already included there.
+
+### 5. Run the Application
+
+From the project root:
 
 ```bash
 make app
 ```
 
-### 5. Create a `.env` file for the backend
+The `Makefile` will:
 
-Create `.env` at the repository root with the database settings used by the FastAPI backend:
-
-```ini
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-DB_HOST=127.0.0.1
-DB_PORT=5433
-DB_NAME=your_database_name
-```
+- verify the SSH key path,
+- clear the required ports (`3000`, `8000`, `5433`, `8001`),
+- start the SSH tunnel to the backend database,
+- launch the frontend and backend development servers.
 
 ## Documentation
 

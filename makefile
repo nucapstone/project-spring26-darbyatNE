@@ -2,15 +2,49 @@
 SHELL := /bin/bash
 
 # 1. ssh tunnel command and path
-SSH_KEY_PATH ?= $(HOME)/.ssh/AWS-Echo-Key.pem
-TUNNEL_CMD = ssh -o IdentitiesOnly=yes -f -N -L 5433:127.0.0.1:5432 -L 8001:127.0.0.1:8000 -i $(SSH_KEY_PATH) ubuntu@3.216.43.184 
+AWS_KEY_PATH ?= $(HOME)/.ssh/AWS-Echo-Key.pem
+TEMP_KEY_PATH ?= $(HOME)/.ssh/prof_eval_key
+SSH_KEY_PATH ?= $(AWS_KEY_PATH)
+TUNNEL_CMD = SELECTED_KEY_PATH=$(SSH_KEY_PATH); \
+	if [ $(SSH_KEY_PATH) != $(AWS_KEY_PATH) ]; then \
+		chmod 600 $$SELECTED_KEY_PATH 2>/dev/null || true; \
+	elif [ -f $(AWS_KEY_PATH) ]; then \
+		read -r -p 'AWS Permanent AWS key found - Continue with this key, y/n? ' aws_reply; \
+		if [[ ! $$aws_reply =~ ^[Yy]$$ ]]; then \
+			if [ -f $(TEMP_KEY_PATH) ]; then \
+				read -r -p 'Temporary Key found - Continue with this key, y/n? ' temp_reply; \
+				if [[ $$temp_reply =~ ^[Yy]$$ ]]; then \
+					SELECTED_KEY_PATH=$(TEMP_KEY_PATH); \
+				else \
+					echo 'Aborting at user request.'; \
+					exit 1; \
+				fi; \
+			else \
+				echo 'Temporary key not found at $(TEMP_KEY_PATH). Aborting.'; \
+				exit 1; \
+			fi; \
+		fi; \
+	elif [ -f $(TEMP_KEY_PATH) ]; then \
+		read -r -p 'Temporary Key found - Continue with this key, y/n? ' temp_reply; \
+		if [[ $$temp_reply =~ ^[Yy]$$ ]]; then \
+			SELECTED_KEY_PATH=$(TEMP_KEY_PATH); \
+		else \
+			echo 'Aborting at user request.'; \
+			exit 1; \
+		fi; \
+	fi; \
+	chmod 600 $$SELECTED_KEY_PATH 2>/dev/null || true; \
+	ssh -o IdentitiesOnly=yes -f -N -L 5433:127.0.0.1:5432 -L 8001:127.0.0.1:8000 -i $$SELECTED_KEY_PATH ubuntu@3.216.43.184
 
-# Verify the SSH key exists before attempting the tunnel
-CHECK_SSH_KEY = @if [ ! -f "$(SSH_KEY_PATH)" ]; then \
-	echo "SSH key not found at $(SSH_KEY_PATH). Place the key there or run: make app SSH_KEY_PATH=$$HOME/.ssh/prof_eval_key"; \
+# Verify that at least one usable SSH key is available before attempting the tunnel
+CHECK_SSH_KEY = @if [ "$(SSH_KEY_PATH)" != "$(AWS_KEY_PATH)" ] && [ ! -f "$(SSH_KEY_PATH)" ]; then \
+	echo "SSH key not found at $(SSH_KEY_PATH)."; \
 	exit 1; \
 fi; \
-chmod 600 "$(SSH_KEY_PATH)" 2>/dev/null || true
+if [ "$(SSH_KEY_PATH)" = "$(AWS_KEY_PATH)" ] && [ ! -f "$(AWS_KEY_PATH)" ] && [ ! -f "$(TEMP_KEY_PATH)" ]; then \
+	echo "No SSH key found at $(AWS_KEY_PATH) or $(TEMP_KEY_PATH)."; \
+	exit 1; \
+fi
 
 # Command to find and cleanly kill this specific tunnel if it is already running
 KILL_TUNNEL = pkill -f "[s]sh -f -N -L 5433" 2>/dev/null || true

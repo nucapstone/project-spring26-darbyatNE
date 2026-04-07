@@ -220,7 +220,7 @@ export function initApp() {
                     'circle-radius': 6,
                     'circle-color': ['match', ['get', 'service_territory'], ...fillColorExpression.slice(2)], 
                     'circle-stroke-width': 1,
-                    'circle-stroke-color': '#FFFFFF'
+                    'circle-stroke-color': '#4a4a4a'
                 }
             }, 'serviceTerritoryLabels');
 

@@ -56,13 +56,13 @@ import "./_observablehq/client.16b578fc.js";
 </aside>
 <main id="observablehq-main" class="observablehq">
 <h1 id="user-guide" tabindex="-1"><a class="observablehq-header-anchor" href="#user-guide">User Guide</a></h1>
-<p>This guide explains the current user-facing workflow of the application as it exists in the repository today.</p>
-<p>The app helps users compare retail service territories with wholesale locational price information by combining:</p>
+<p>This guide describes the <strong>current checked-in interface</strong> for the Electricity Retail/Wholesale Comparison Tool.</p>
+<p>The app combines:</p>
 <ul>
-<li>service territory polygons,</li>
-<li>wholesale point locations,</li>
-<li>retail and wholesale monthly price views,</li>
-<li>a time slider and animation controls,</li>
+<li>retail service territory polygons,</li>
+<li>wholesale LMP point locations,</li>
+<li>average and month-by-month price views,</li>
+<li>animation controls and a time slider,</li>
 <li>a sidebar listing retail territories.</li>
 </ul>
 <h2 id="1-key-terms" tabindex="-1"><a class="observablehq-header-anchor" href="#1-key-terms">1. Key Terms</a></h2>
@@ -78,164 +78,152 @@ import "./_observablehq/client.16b578fc.js";
 <tr>
 <td style="text-align:left"><strong>PJM</strong></td>
 <td style="text-align:left">Pennsylvania-New Jersey-Maryland Interconnection</td>
-<td style="text-align:left">The regional transmission organization whose market and territory data drive this application</td>
+<td style="text-align:left">The regional transmission organization whose market data powers this application</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Retail Price</strong></td>
-<td style="text-align:left">Utility or service-territory retail electricity price</td>
-<td style="text-align:left">Used to color the service territory polygons in price view</td>
+<td style="text-align:left">Service-territory retail electricity price</td>
+<td style="text-align:left">Used to color the territory polygons in price view</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Wholesale Price</strong></td>
 <td style="text-align:left">Aggregated LMP-based wholesale price</td>
-<td style="text-align:left">Used to color the point markers in price view</td>
+<td style="text-align:left">Used to color the LMP point markers in price view</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Locational View</strong></td>
-<td style="text-align:left">Non-price categorical map coloring by territory/zone</td>
-<td style="text-align:left">Helps users distinguish territories spatially before switching to price mode</td>
+<td style="text-align:left">A non-price territory map</td>
+<td style="text-align:left">Helps users orient themselves spatially</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Price View</strong></td>
-<td style="text-align:left">Quantitative coloring based on retail and wholesale values</td>
-<td style="text-align:left">Used to compare pricing patterns across territories and locations</td>
+<td style="text-align:left">A value-based map view</td>
+<td style="text-align:left">Used to compare retail and wholesale pricing patterns</td>
 </tr>
 </tbody>
 </table>
 <h2 id="2-main-screen-layout" tabindex="-1"><a class="observablehq-header-anchor" href="#2-main-screen-layout">2. Main Screen Layout</a></h2>
-<p>The main map page has three primary areas:</p>
+<p>The main page has three primary areas:</p>
 <ol>
-<li>A top control bar.</li>
-<li>The map and legend area.</li>
-<li>The right sidebar labeled <strong>Retail Territories</strong>.</li>
+<li>a top control bar,</li>
+<li>the map and legend area,</li>
+<li>the <strong>Retail Territories</strong> sidebar on the right.</li>
 </ol>
 <h3 id="top-control-bar" tabindex="-1"><a class="observablehq-header-anchor" href="#top-control-bar">Top Control Bar</a></h3>
 <p>The top controls currently include:</p>
 <ul>
-<li><strong>Locational View / Price View</strong> toggle: click the label box on the left to switch the overall map mode.</li>
+<li><strong>Price Type →</strong> label: click this label to toggle between <strong>Locational View</strong> and <strong>Price View</strong>.</li>
 <li><strong>Retail</strong> checkbox: shows or hides the retail territory polygons.</li>
-<li><strong>Wholesale</strong> checkbox: shows or hides the wholesale point markers.</li>
-<li><strong>Selected Months</strong> box: click this area to open the filter dialog.</li>
+<li><strong>Wholesale</strong> checkbox: shows or hides the wholesale LMP point markers.</li>
+<li><strong>Selected Months</strong> box: opens the filter dialog.</li>
 </ul>
 <h2 id="3-using-the-selected-months-filter" tabindex="-1"><a class="observablehq-header-anchor" href="#3-using-the-selected-months-filter">3. Using the Selected Months Filter</a></h2>
 <p>Click the <strong>Selected Months</strong> box to open the filter modal.</p>
-<p>This dialog controls the date range used to query and summarize the data shown in the map.</p>
-<p>Users can adjust:</p>
+<p>This dialog controls the time window used to summarize the data shown on the map.</p>
+<p>You can adjust:</p>
 <ul>
 <li>start year,</li>
 <li>end year,</li>
-<li>month selection,</li>
-<li>additional date and time settings exposed by the picker.</li>
+<li>month selection.</li>
 </ul>
-<p>When the filter is applied:</p>
-<ol>
-<li>the current filter state is updated,</li>
-<li>the display box in the header is refreshed,</li>
-<li>the app reloads the page parameters,</li>
-<li>the map data is reloaded for the selected period.</li>
-</ol>
+<p>When the filter is applied, the page URL is updated and the map reloads the corresponding data.</p>
 <h2 id="4-locational-view-vs-price-view" tabindex="-1"><a class="observablehq-header-anchor" href="#4-locational-view-vs-price-view">4. Locational View vs Price View</a></h2>
 <h3 id="locational-view" tabindex="-1"><a class="observablehq-header-anchor" href="#locational-view">Locational View</a></h3>
 <p>Locational View is the default startup mode.</p>
 <p>In this view:</p>
 <ul>
-<li>each service territory is given a categorical map color,</li>
-<li>retail territory polygons are visible,</li>
-<li>wholesale points inherit matching territory colors,</li>
-<li>the sidebar rows in <strong>Retail Territories</strong> use the same territory colors as the map.</li>
+<li>each service territory is assigned a categorical territory color,</li>
+<li>wholesale points inherit territory-based coloring,</li>
+<li>the sidebar rows use matching territory colors,</li>
+<li>the legend reflects territory identity rather than price magnitude.</li>
 </ul>
-<p>This view is primarily for orientation and territory identification.</p>
+<p>This view is intended for orientation and region identification.</p>
 <h3 id="price-view" tabindex="-1"><a class="observablehq-header-anchor" href="#price-view">Price View</a></h3>
-<p>Click the <strong>Locational View / Price View</strong> label box to switch into Price View.</p>
+<p>Click the <strong>Price Type →</strong> label to switch from Locational View into Price View.</p>
 <p>In this view:</p>
 <ul>
-<li>service territory polygons are colored by retail price,</li>
-<li>wholesale point markers are colored by wholesale price,</li>
-<li>the sidebar rows continue to match the active map colors,</li>
-<li>the legend changes to reflect the quantitative pricing scale.</li>
+<li>service territory polygons are colored by <strong>retail price</strong>,</li>
+<li>wholesale point markers are colored by <strong>wholesale price</strong>,</li>
+<li>the legend changes to the active quantitative color scale,</li>
+<li>the sidebar rows stay synchronized with the active price coloring.</li>
 </ul>
-<p>The app currently switches the main map color mode between locational and retail-price coloring through this label-based toggle.</p>
 <h2 id="5-retail-and-wholesale-layer-checkboxes" tabindex="-1"><a class="observablehq-header-anchor" href="#5-retail-and-wholesale-layer-checkboxes">5. Retail and Wholesale Layer Checkboxes</a></h2>
 <p>The <strong>Retail</strong> and <strong>Wholesale</strong> checkboxes control layer visibility independently.</p>
-<p>This means users can:</p>
+<p>This lets you:</p>
 <ul>
-<li>show only the retail territory polygons,</li>
-<li>show only the wholesale points,</li>
-<li>show both together.</li>
+<li>show only retail polygons,</li>
+<li>show only wholesale points,</li>
+<li>show both layers together.</li>
 </ul>
-<p>This is useful when comparing how retail territory shading lines up with the underlying wholesale point distribution.</p>
+<p>The wholesale checkbox controls the LMP point markers directly.</p>
 <h2 id="6-map-interactions" tabindex="-1"><a class="observablehq-header-anchor" href="#6-map-interactions">6. Map Interactions</a></h2>
 <h3 id="service-territory-polygons" tabindex="-1"><a class="observablehq-header-anchor" href="#service-territory-polygons">Service territory polygons</a></h3>
-<p>Users can click a service territory polygon to:</p>
+<p>Clicking a service territory polygon will:</p>
 <ul>
-<li>select that territory,</li>
+<li>select the territory,</li>
 <li>highlight its border,</li>
-<li>center the map on that area,</li>
+<li>center or refocus the map,</li>
 <li>synchronize the selection with the sidebar row.</li>
 </ul>
 <h3 id="wholesale-point-markers" tabindex="-1"><a class="observablehq-header-anchor" href="#wholesale-point-markers">Wholesale point markers</a></h3>
-<p>Hovering a wholesale point displays a popup with:</p>
+<p>Clicking a wholesale LMP point opens a popup.</p>
+<p>Depending on the current view, the popup shows either:</p>
 <ul>
-<li>service territory,</li>
-<li>node name,</li>
-<li>pnode ID,</li>
-<li>type,</li>
-<li>voltage,</li>
-<li>latitude and longitude,</li>
-<li>location context.</li>
+<li><strong>Locational details</strong> such as node name, <code>pnode_id</code>, type, voltage, coordinates, and location context, or</li>
+<li><strong>Price information</strong> for the selected period.</li>
 </ul>
+<p>When the app is in <strong>Avg Price View</strong>, the popup shows the average price over the selected period.</p>
+<p>When <strong>Animate Months</strong> is running or the timeline slider is moved to a specific month, the popup updates to match the month currently shown on screen.</p>
 <h2 id="7-retail-territories-sidebar" tabindex="-1"><a class="observablehq-header-anchor" href="#7-retail-territories-sidebar">7. Retail Territories Sidebar</a></h2>
-<p>The <strong>Retail Territories</strong> sidebar lists all territories plus a PJM overview entry.</p>
+<p>The <strong>Retail Territories</strong> sidebar lists all service territories plus a <strong>PJM</strong> overview entry.</p>
 <p>Current behavior:</p>
 <ul>
 <li>clicking a row selects and centers that territory,</li>
-<li>the selected row is visually outlined,</li>
-<li>row background colors match the active map colors,</li>
-<li>row text automatically switches between light and dark for contrast,</li>
-<li>territory rows include checkboxes used by the plot panel workflow.</li>
+<li>the selected row is visually highlighted,</li>
+<li>row background colors stay aligned with the current map coloring,</li>
+<li>row text automatically switches for contrast.</li>
 </ul>
-<p>The sidebar is designed to mirror the map rather than act as a separate legend.</p>
 <h2 id="8-bottom-controls" tabindex="-1"><a class="observablehq-header-anchor" href="#8-bottom-controls">8. Bottom Controls</a></h2>
-<p>The lower control bar includes:</p>
+<p>The bottom control bar includes:</p>
 <ul>
-<li><strong>Avg Price View</strong> button,</li>
-<li><strong>Animate Months</strong> button,</li>
+<li><strong>Avg Price View</strong>,</li>
+<li><strong>Animate Months</strong>,</li>
 <li><strong>Speed</strong> slider,</li>
 <li>timeline slider,</li>
 <li>time display readout.</li>
 </ul>
 <h3 id="avg-price-view" tabindex="-1"><a class="observablehq-header-anchor" href="#avg-price-view">Avg Price View</a></h3>
-<p>This resets the view to an aggregated summary across the current query window.</p>
+<p>This returns the map to an aggregated average across the currently selected time window.</p>
 <h3 id="animate-months" tabindex="-1"><a class="observablehq-header-anchor" href="#animate-months">Animate Months</a></h3>
-<p>This starts stepping through the loaded time sequence automatically.</p>
+<p>This steps through the loaded monthly sequence automatically.</p>
 <h3 id="time-slider" tabindex="-1"><a class="observablehq-header-anchor" href="#time-slider">Time slider</a></h3>
-<p>This allows users to manually move through the available time index.</p>
+<p>This lets you manually move through the available month index.</p>
 <h3 id="speed-slider" tabindex="-1"><a class="observablehq-header-anchor" href="#speed-slider">Speed slider</a></h3>
-<p>This controls the playback speed of the animation.</p>
+<p>This controls the playback speed of the month animation.</p>
 <h2 id="9-how-to-read-the-map" tabindex="-1"><a class="observablehq-header-anchor" href="#9-how-to-read-the-map">9. How to Read the Map</a></h2>
 <h3 id="in-locational-view" tabindex="-1"><a class="observablehq-header-anchor" href="#in-locational-view">In Locational View</a></h3>
-<p>Colors identify territories, not price magnitude.</p>
-<p>The main purpose is spatial orientation:</p>
+<p>Colors identify territories rather than price magnitude.</p>
+<p>Use this mode to understand:</p>
 <ul>
 <li>which territory is where,</li>
-<li>which wholesale points belong to which territory,</li>
-<li>how the sidebar rows correspond to map regions.</li>
+<li>which points belong to which service territory,</li>
+<li>how the sidebar corresponds to the map.</li>
 </ul>
 <h3 id="in-price-view" tabindex="-1"><a class="observablehq-header-anchor" href="#in-price-view">In Price View</a></h3>
-<p>Colors represent price ranges.</p>
+<p>Colors represent value ranges.</p>
 <p>In general:</p>
 <ul>
-<li>cooler colors indicate lower values,</li>
-<li>warmer colors indicate higher values,</li>
-<li>retail polygons and wholesale points may use different value ranges even when shown together.</li>
+<li><strong>bluer tones</strong> indicate lower values,</li>
+<li><strong>redder tones</strong> indicate higher values,</li>
+<li>the legend should be used to interpret the current thresholds,</li>
+<li>retail polygons and wholesale points may occupy different value ranges even when displayed together.</li>
 </ul>
-<p>Users should rely on the legend and the active layer combination when interpreting pricing patterns.</p>
 <h2 id="10-current-notes" tabindex="-1"><a class="observablehq-header-anchor" href="#10-current-notes">10. Current Notes</a></h2>
-<p>This guide reflects the checked-in interface today.</p>
-<p>Some surrounding project documentation still contains earlier terminology from older versions of the app. When there is a mismatch, the actual UI labels in the application should be treated as the source of truth.</p>
+<p>This guide reflects the current interface in the repository.</p>
+<p>If other project documents use older terminology, the actual on-screen UI labels and behaviors should be treated as the source of truth.</p>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-06T09:17:48">Apr 6, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-06T19:11:52">Apr 6, 2026</a>.</div>
 </footer>
 </div>
 </body>

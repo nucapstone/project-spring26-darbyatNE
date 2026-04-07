@@ -9,14 +9,14 @@ export const API_BASE_URL = "http://localhost:8000";
 
 // Diverging palette: blue -> light gray -> red
 const PRICE_COLORS = [
-    '#2166ac', // 0: deep blue
-    '#4393c3', // 1: blue
-    '#92c5de', // 2: light blue
-    '#d1e5f0', // 3: pale blue
-    '#f7f7f7', // 4: light gray midpoint
-    '#fddbc7', // 5: pale red
-    '#ef8a62', // 6: red-orange
-    '#b2182b'  // 7: deep red
+    '#0f4c81', // 0: deep blue
+    '#2b6c9e', // 1: blue
+    '#5a90b5', // 2: medium-light blue
+    '#8fb4cc', // 3: pale blue
+    '#d9a3a3', // 4: pale red
+    '#c97c7c', // 5: muted red
+    '#b55252', // 6: red
+    '#8f1d1d'  // 7: deep red
 ];
 
 // Retail fits approximately 0.13 -> 0.28

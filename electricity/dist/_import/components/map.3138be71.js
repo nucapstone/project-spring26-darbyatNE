@@ -7,8 +7,8 @@ import { zonePlotManager } from "./zone_plot.573e34e5.js";
 import { dateTimeRangePicker } from "./picker.0a54784a.js"; 
 
 // 1. Removed ZONE_LABEL_OVERRIDES from the import
-import { API_BASE_URL, NET_COLOR_SCALE } from "../utils/config.fb59f93a.js";
-import { MapController } from "../managers/app_controller.13123864.js";
+import { API_BASE_URL, NET_COLOR_SCALE } from "../utils/config.d6642fe5.js";
+import { MapController } from "../managers/app_controller.316767f8.js";
 
 export function initApp() {
     // 1. Initialize Map
@@ -220,7 +220,7 @@ export function initApp() {
                     'circle-radius': 6,
                     'circle-color': ['match', ['get', 'service_territory'], ...fillColorExpression.slice(2)], 
                     'circle-stroke-width': 1,
-                    'circle-stroke-color': '#FFFFFF'
+                    'circle-stroke-color': '#4a4a4a'
                 }
             }, 'serviceTerritoryLabels');
 
