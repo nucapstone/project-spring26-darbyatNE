@@ -26,8 +26,6 @@ git clone https://github.com/nucapstone/project-spring26-darbyatNE.git
 
 ### 2. Create the Conda environment and NPM dependencies
 
-The Python environment definition already exists in [electricity/environment.yml](electricity/environment.yml).
-
 ```bash
 cd electricity
 conda env create -f environment.yml
@@ -38,7 +36,7 @@ cd ..
 
 ### 3. Install the SSH key used by the `Makefile`
 
-- If you were sent a **temporary evaluation key** privately, you can install it with a single copy/paste block:
+- If you were sent a **temporary evaluation key**, you can install it with a single copy/paste block:
 
 ```bash
 make temp <<'EOF'
@@ -52,7 +50,7 @@ EOF
 
 ### 4. Save the provided `.env` file at the repository root
 
-Place the `.env` file you were sent privately in the root of the cloned repository (the same directory as `README.MD` and `makefile`). The required credentials are already included there.
+Place the `.env` file you were sent privately in the /electrciity directory of the cloned repository (the same directory as `README.MD` and `makefile`). The required credentials are already included there.
 
 ### 5. Run the Application
 
