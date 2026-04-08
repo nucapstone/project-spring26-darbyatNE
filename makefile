@@ -5,36 +5,18 @@ SHELL := /bin/bash
 AWS_KEY_PATH ?= $(HOME)/.ssh/AWS-Echo-Key.pem
 TEMP_KEY_PATH ?= $(HOME)/.ssh/prof_eval_key
 SSH_KEY_PATH ?= $(AWS_KEY_PATH)
-TUNNEL_CMD = SELECTED_KEY_PATH=$(SSH_KEY_PATH); \
-	if [ $(SSH_KEY_PATH) != $(AWS_KEY_PATH) ]; then \
-		chmod 600 $$SELECTED_KEY_PATH 2>/dev/null || true; \
-	elif [ -f $(AWS_KEY_PATH) ]; then \
-		read -r -p 'AWS Permanent AWS key found - Continue with this key, y/n? ' aws_reply; \
-		if [[ ! $$aws_reply =~ ^[Yy]$$ ]]; then \
-			if [ -f $(TEMP_KEY_PATH) ]; then \
-				read -r -p 'Temporary Key found - Continue with this key, y/n? ' temp_reply; \
-				if [[ $$temp_reply =~ ^[Yy]$$ ]]; then \
-					SELECTED_KEY_PATH=$(TEMP_KEY_PATH); \
-				else \
-					echo 'Aborting at user request.'; \
-					exit 1; \
-				fi; \
-			else \
-				echo 'Temporary key not found at $(TEMP_KEY_PATH). Aborting.'; \
-				exit 1; \
-			fi; \
-		fi; \
-	elif [ -f $(TEMP_KEY_PATH) ]; then \
-		read -r -p 'Temporary Key found - Continue with this key, y/n? ' temp_reply; \
-		if [[ $$temp_reply =~ ^[Yy]$$ ]]; then \
-			SELECTED_KEY_PATH=$(TEMP_KEY_PATH); \
-		else \
-			echo 'Aborting at user request.'; \
-			exit 1; \
+TUNNEL_CMD = SELECTED_KEY_PATH="$(SSH_KEY_PATH)"; \
+	if [ "$(SSH_KEY_PATH)" = "$(AWS_KEY_PATH)" ]; then \
+		if [ -f "$(AWS_KEY_PATH)" ]; then \
+			SELECTED_KEY_PATH="$(AWS_KEY_PATH)"; \
+			echo "Using default AWS SSH key at $(AWS_KEY_PATH)"; \
+		elif [ -f "$(TEMP_KEY_PATH)" ]; then \
+			SELECTED_KEY_PATH="$(TEMP_KEY_PATH)"; \
+			echo "AWS key not found. Using installed temporary SSH key at $(TEMP_KEY_PATH)"; \
 		fi; \
 	fi; \
-	chmod 600 $$SELECTED_KEY_PATH 2>/dev/null || true; \
-	ssh -o IdentitiesOnly=yes -f -N -L 5433:127.0.0.1:5432 -L 8001:127.0.0.1:8000 -i $$SELECTED_KEY_PATH ubuntu@3.216.43.184
+	chmod 600 "$$SELECTED_KEY_PATH" 2>/dev/null || true; \
+	ssh -o IdentitiesOnly=yes -f -N -L 5433:127.0.0.1:5432 -L 8001:127.0.0.1:8000 -i "$$SELECTED_KEY_PATH" ubuntu@3.216.43.184
 
 # Verify that at least one usable SSH key is available before attempting the tunnel
 CHECK_SSH_KEY = @if [ "$(SSH_KEY_PATH)" != "$(AWS_KEY_PATH)" ] && [ ! -f "$(SSH_KEY_PATH)" ]; then \
@@ -42,7 +24,7 @@ CHECK_SSH_KEY = @if [ "$(SSH_KEY_PATH)" != "$(AWS_KEY_PATH)" ] && [ ! -f "$(SSH_
 	exit 1; \
 fi; \
 if [ "$(SSH_KEY_PATH)" = "$(AWS_KEY_PATH)" ] && [ ! -f "$(AWS_KEY_PATH)" ] && [ ! -f "$(TEMP_KEY_PATH)" ]; then \
-	echo "No SSH key found at $(AWS_KEY_PATH) or $(TEMP_KEY_PATH)."; \
+	echo "No SSH key found at $(AWS_KEY_PATH) or $(TEMP_KEY_PATH). Run 'make temp' if you were sent a temporary evaluation key."; \
 	exit 1; \
 fi
 
@@ -81,7 +63,7 @@ else
     IS_WSL := $(shell uname -r | grep -i microsoft)
 endif
 
-.PHONY: app stop
+.PHONY: app stop temp
 
 # The single target that handles all tasks for all OSes
 app:
@@ -120,6 +102,24 @@ else ifeq ($(DETECTED_OS),Windows)
 else
 	@echo "Unsupported Operating System: $(DETECTED_OS)"
 endif
+
+temp:
+	@mkdir -p "$(HOME)/.ssh"
+	@if [ -n "$(TEMP_KEY)" ]; then \
+		printf '%b\n' "$(TEMP_KEY)" > "$(TEMP_KEY_PATH)"; \
+	else \
+		echo "Paste the full temporary SSH private key, then press Ctrl-D:"; \
+		cat > "$(TEMP_KEY_PATH)"; \
+	fi
+	@chmod 600 "$(TEMP_KEY_PATH)"
+	@if ssh-keygen -y -f "$(TEMP_KEY_PATH)" >/dev/null 2>&1; then \
+		echo "✅ Temporary SSH key installed at $(TEMP_KEY_PATH)"; \
+		echo "Next step: run 'make app'"; \
+	else \
+		echo "❌ The saved file is not a valid SSH private key. Please retry 'make temp' with the full key block."; \
+		rm -f "$(TEMP_KEY_PATH)"; \
+		exit 1; \
+	fi
 
 # Kills the invisible SSH tunnel
 stop:
