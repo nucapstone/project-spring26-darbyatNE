@@ -17,6 +17,7 @@ TUNNEL_CMD = SELECTED_KEY_PATH="$(SSH_KEY_PATH)"; \
 	fi; \
 	chmod 600 "$$SELECTED_KEY_PATH" 2>/dev/null || true; \
 	ssh -o IdentitiesOnly=yes -f -N -L 5433:127.0.0.1:5432 -L 8001:127.0.0.1:8000 -i "$$SELECTED_KEY_PATH" ubuntu@3.216.43.184
+TUNNEL_CMD_OSASCRIPT = $(subst ",\",$(TUNNEL_CMD))
 
 # Verify that at least one usable SSH key is available before attempting the tunnel
 CHECK_SSH_KEY = @if [ "$(SSH_KEY_PATH)" != "$(AWS_KEY_PATH)" ] && [ ! -f "$(SSH_KEY_PATH)" ]; then \
@@ -73,7 +74,7 @@ ifeq ($(DETECTED_OS),Darwin)
 	$(CHECK_AND_FREE_PORTS)
 	$(CHECK_SSH_KEY)
 	@echo "Detected macOS. Spawning Apple Terminal..."
-	@osascript -e 'tell app "Terminal" to do script "cd $(ROOT_DIR) && $(TUNNEL_CMD) && source $$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev; exec bash"'
+	@osascript -e 'tell app "Terminal" to do script "cd $(ROOT_DIR) && $(TUNNEL_CMD_OSASCRIPT) && source $$(conda info --base)/etc/profile.d/conda.sh && conda activate $(CONDA_ENV_NAME) && cd electricity && npm run dev; exec bash"'
 
 else ifeq ($(DETECTED_OS),Linux)
 ifneq ($(IS_WSL),)
