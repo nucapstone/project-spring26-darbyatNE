@@ -9,8 +9,8 @@ The Electricity Retail/Wholesale Comparison Tool is designed to enable users to 
 # PJM ISO Retail Electricity Service Provider Territories 
 
 <div align="center">
-  <img src="docs/retail service territories.png" alt="Retail Service Territories" width="600">
-  <p><em>This map visualizes the physical territory served by Electric Service Providers with the PJM footprint</em></p>
+  <img src="docs/dashboard.png" alt="Retail Service Territories" width="600">
+  <p><em>This map visualizes the physical territory served by Electric Service Providers within the PJM footprint</em></p>
 </div>
 
 ## Quick Start Guide

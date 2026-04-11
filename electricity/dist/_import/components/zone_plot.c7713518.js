@@ -42,17 +42,23 @@ export class ZonePlotManager {
         display: flex;
         flex-direction: column;
         transform: translateY(0) !important;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
         background: #f0f0f0;
         z-index: 1000;
         box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
         border-radius: 8px;
-        transition: transform 0.3s ease-in-out;
+        transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out, visibility 0s linear;
         overflow: hidden;
         box-sizing: border-box;
       }
       
       .plot-panel.hidden {
         transform: translateY(calc(100% + 12px)) !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
       }
     `;
     document.head.appendChild(style);
@@ -60,6 +66,7 @@ export class ZonePlotManager {
     const panel = document.createElement('div');
     panel.id = 'plot-panel';
     panel.className = 'plot-panel hidden';
+    panel.setAttribute('aria-hidden', 'true');
     
     panel.innerHTML = `
       <div class="plot-header" style="padding: 4px 10px; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; background: #f0f0f0; border-bottom: 1px solid #ddd;">
@@ -90,7 +97,7 @@ export class ZonePlotManager {
     });
 
     document.getElementById('close-plot-btn').addEventListener('click', () => {
-      panel.classList.add('hidden');
+      this.setPanelVisibility(false);
     });
   }
 
@@ -104,6 +111,14 @@ export class ZonePlotManager {
     panel.style.top = `${Math.round(rect.top)}px`;
     panel.style.width = `${Math.round(rect.width)}px`;
     panel.style.height = `${Math.round(rect.height)}px`;
+  }
+
+  setPanelVisibility(isVisible) {
+    const panel = document.getElementById('plot-panel');
+    if (!panel) return;
+
+    panel.classList.toggle('hidden', !isVisible);
+    panel.setAttribute('aria-hidden', String(!isVisible));
   }
 
   setupZoneCheckboxes() {
@@ -141,10 +156,10 @@ export class ZonePlotManager {
     if (this.selectedZones.size > 0 && this.timeSeriesData) {
       this.syncPanelToMap();
       this.plotDataFromExisting(this.timeSeriesData);
-      document.getElementById('plot-panel').classList.remove('hidden');
+      this.setPanelVisibility(true);
     } else if (this.selectedZones.size === 0) {
       this.plotContainer.innerHTML = '<p class="empty-state" style="padding: 20px; text-align: center; color: #666;">Select zones using checkboxes in the sidebar to begin</p>';
-      document.getElementById('plot-panel').classList.add('hidden');
+      this.setPanelVisibility(false);
     }
   }
 
@@ -190,7 +205,7 @@ export class ZonePlotManager {
     this.updateSelectionCount();
     this.updateZoneHighlights();
     this.plotContainer.innerHTML = '<p class="empty-state" style="padding: 20px; text-align: center; color: #666;">Select zones using checkboxes in the sidebar to begin</p>';
-    document.getElementById('plot-panel').classList.add('hidden');
+    this.setPanelVisibility(false);
   }
 
   plotDataFromExisting(timeSeriesData) {

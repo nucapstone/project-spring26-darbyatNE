@@ -339,7 +339,12 @@ export function initApp() {
             ];
             
             if (zoneListEl) {
-                zoneListEl.innerHTML = zones.map(z => `<div class="zone-item" data-zone-name="${z.name}"><span class="zone-name">${z.name}</span><span class="zone-price"></span></div>`).join('');
+                zoneListEl.innerHTML = zones.map(z => {
+                    const label = z.name === 'PJM'
+                        ? `PJM <span style="font-size: 11px; opacity: 0.8; font-weight: 500;">&lt;Click To Recenter&gt;</span>`
+                        : z.name;
+                    return `<div class="zone-item" data-zone-name="${z.name}"><span class="zone-name">${label}</span><span class="zone-price"></span></div>`;
+                }).join('');
                 
                 zoneListEl.addEventListener('click', (e) => {
                     const item = e.target.closest('.zone-item');

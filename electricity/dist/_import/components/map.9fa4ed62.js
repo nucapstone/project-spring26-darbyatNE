@@ -3,7 +3,7 @@ import * as d3 from "../../_npm/d3@7.9.0/e780feca.js";
 
 import { filter, saveFilter } from "./filter.9314faac.js"; 
 import { buildLegend, displayCurrentFilter } from "./ui.1db8755a.js";
-import { zonePlotManager } from "./zone_plot.573e34e5.js";
+import { zonePlotManager } from "./zone_plot.c7713518.js";
 import { dateTimeRangePicker } from "./picker.0a54784a.js"; 
 
 // 1. Removed ZONE_LABEL_OVERRIDES from the import
@@ -339,7 +339,12 @@ export function initApp() {
             ];
             
             if (zoneListEl) {
-                zoneListEl.innerHTML = zones.map(z => `<div class="zone-item" data-zone-name="${z.name}"><span class="zone-name">${z.name}</span><span class="zone-price"></span></div>`).join('');
+                zoneListEl.innerHTML = zones.map(z => {
+                    const label = z.name === 'PJM'
+                        ? `PJM <span style="font-size: 11px; opacity: 0.8; font-weight: 500;">&lt;Recenter&gt;</span>`
+                        : z.name;
+                    return `<div class="zone-item" data-zone-name="${z.name}"><span class="zone-name">${label}</span><span class="zone-price"></span></div>`;
+                }).join('');
                 
                 zoneListEl.addEventListener('click', (e) => {
                     const item = e.target.closest('.zone-item');

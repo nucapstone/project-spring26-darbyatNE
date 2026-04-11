@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="generator" content="Observable Framework v1.13.4">
-<title>Architecture | PJM LMP Visualization</title>
+<title>System Architecture | PJM LMP Visualization</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
 <link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.b050d634.css">
@@ -41,147 +41,285 @@ import "./_observablehq/client.16b578fc.js";
 <nav>
 <div>Contents</div>
 <ol>
-<li class="observablehq-secondary-link"><a href="#1-system-overview">1. System Overview</a></li>
-<li class="observablehq-secondary-link"><a href="#2-runtime-flow">2. Runtime Flow</a></li>
-<li class="observablehq-secondary-link"><a href="#3-major-components">3. Major Components</a></li>
-<li class="observablehq-secondary-link"><a href="#4-frontend-structure">4. Frontend Structure</a></li>
-<li class="observablehq-secondary-link"><a href="#5-backend-structure">5. Backend Structure</a></li>
-<li class="observablehq-secondary-link"><a href="#6-data-and-hydration-scripts">6. Data and Hydration Scripts</a></li>
-<li class="observablehq-secondary-link"><a href="#7-external-dependencies">7. External Dependencies</a></li>
-<li class="observablehq-secondary-link"><a href="#8-repository-areas-relevant-to-reproduction">8. Repository Areas Relevant to Reproduction</a></li>
-<li class="observablehq-secondary-link"><a href="#9-current-boundaries-and-incomplete-areas">9. Current Boundaries and Incomplete Areas</a></li>
+<li class="observablehq-secondary-link"><a href="#1-architecture-summary">1. Architecture summary</a></li>
+<li class="observablehq-secondary-link"><a href="#2-end-to-end-runtime-flow">2. End-to-end runtime flow</a></li>
+<li class="observablehq-secondary-link"><a href="#3-major-subsystems">3. Major subsystems</a></li>
+<li class="observablehq-secondary-link"><a href="#4-frontend-design">4. Frontend design</a></li>
+<li class="observablehq-secondary-link"><a href="#5-backend-design">5. Backend design</a></li>
+<li class="observablehq-secondary-link"><a href="#6-data-model-used-by-the-dashboard">6. Data model used by the dashboard</a></li>
+<li class="observablehq-secondary-link"><a href="#7-state-and-rendering-flow-in-the-frontend">7. State and rendering flow in the frontend</a></li>
+<li class="observablehq-secondary-link"><a href="#8-supporting-data-maintenance-scripts">8. Supporting data-maintenance scripts</a></li>
+<li class="observablehq-secondary-link"><a href="#9-external-dependencies-and-assumptions">9. External dependencies and assumptions</a></li>
+<li class="observablehq-secondary-link"><a href="#10-repository-areas-most-relevant-to-future-contributors">10. Repository areas most relevant to future contributors</a></li>
+<li class="observablehq-secondary-link"><a href="#11-final-note">11. Final note</a></li>
 </ol>
 </nav>
 </aside>
 <main id="observablehq-main" class="observablehq">
-<h1 id="application-architecture" tabindex="-1"><a class="observablehq-header-anchor" href="#application-architecture">Application Architecture</a></h1>
-<p>This document describes the current runtime architecture of the Electricity Retail/Wholesale Comparison Tool and how the major pieces fit together.</p>
-<p>It is intended to explain how the checked-in application runs today. For environment creation and launch instructions, use <a href="./SETUP.md">SETUP.md</a>. For the quickest startup path, use the top-level <a href="../../README.MD">README.MD</a>.</p>
-<h2 id="1-system-overview" tabindex="-1"><a class="observablehq-header-anchor" href="#1-system-overview">1. System Overview</a></h2>
-<p>The application is split into four main layers:</p>
+<h1 id="system-architecture" tabindex="-1"><a class="observablehq-header-anchor" href="#system-architecture">System Architecture</a></h1>
+<p>This document summarizes the final architecture of the completed Electricity Retail / Wholesale Comparison Tool.</p>
+<p>It explains how the app starts, how data moves through the system, and which files are responsible for the major behaviors seen in the dashboard.</p>
+<p>For environment setup, see <a href="./SETUP">Setup / Environment</a>. For product usage, see <a href="./USER_GUIDE">User Guide</a>.</p>
+<h2 id="1-architecture-summary" tabindex="-1"><a class="observablehq-header-anchor" href="#1-architecture-summary">1. Architecture summary</a></h2>
+<p>The application has five main runtime layers:</p>
 <ol>
-<li>Observable Framework frontend for the UI and page structure.</li>
-<li>MapLibre-based map rendering and interactive overlays.</li>
-<li>FastAPI backend for API endpoints and database access.</li>
-<li>PostgreSQL-backed data store accessed through SQLAlchemy.</li>
+<li><strong>Root startup automation</strong> via the repository <code>makefile</code></li>
+<li><strong>Observable Framework frontend</strong> for page layout and documentation pages</li>
+<li><strong>MapLibre + D3 interaction layer</strong> for the map, legend, animation, and chart behavior</li>
+<li><strong>FastAPI backend</strong> for API endpoints and database access</li>
+<li><strong>PostgreSQL data layer</strong> for service territory, retail, and wholesale pricing data</li>
 </ol>
-<p>At runtime, the frontend talks to the backend over local HTTP, and the backend queries the database using credentials loaded from <code>.env</code>.</p>
-<h2 id="2-runtime-flow" tabindex="-1"><a class="observablehq-header-anchor" href="#2-runtime-flow">2. Runtime Flow</a></h2>
+<p>At runtime, the frontend talks to the backend over local HTTP, and the backend queries the PostgreSQL database using credentials loaded from <code>electricity/.env</code>.</p>
+<h2 id="2-end-to-end-runtime-flow" tabindex="-1"><a class="observablehq-header-anchor" href="#2-end-to-end-runtime-flow">2. End-to-end runtime flow</a></h2>
 <p>The normal local startup path is:</p>
 <ol>
-<li><code>make app</code> is run from the repository root.</li>
-<li>The Makefile opens an SSH tunnel for the database and frees local app ports if needed.</li>
-<li>The Conda environment <code>lmp-env</code> is activated.</li>
-<li>The working directory changes into <code>electricity/</code>.</li>
-<li><code>npm run dev</code> launches both:
+<li>The user runs <code>make app</code> from the repository root.</li>
+<li>The root <code>makefile</code>:
 <ul>
-<li>the Observable frontend on port <code>3000</code></li>
-<li>the FastAPI backend on port <code>8000</code></li>
+<li>verifies an SSH key is available,</li>
+<li>frees local ports if necessary,</li>
+<li>opens the SSH tunnel used for database access.</li>
 </ul>
 </li>
-<li>Frontend requests under <code>/api</code> are proxied to the backend.</li>
+<li>The <code>lmp-lite</code> Conda environment is activated.</li>
+<li>The working directory changes into <code>electricity/</code>.</li>
+<li><code>npm run dev</code> starts both services:
+<ul>
+<li>Observable frontend on port <code>3000</code></li>
+<li>FastAPI backend on port <code>8000</code></li>
+</ul>
+</li>
+<li>The frontend loads the map shell from <code>src/index.md</code>.</li>
+<li><code>MapController.loadData()</code> requests <code>/api/service_territory_price_data</code>.</li>
+<li>The backend joins retail and wholesale monthly data and returns the filtered records.</li>
+<li>The frontend computes:
+<ul>
+<li>average values for summary view,</li>
+<li><code>monthlyFrames</code> for animation and time scrubbing,</li>
+<li>the current color scales for the map and legend.</li>
+</ul>
+</li>
+<li>The map, sidebar, popups, and <strong>Price Analysis</strong> panel all update from that shared state.</li>
 </ol>
-<h2 id="3-major-components" tabindex="-1"><a class="observablehq-header-anchor" href="#3-major-components">3. Major Components</a></h2>
+<h2 id="3-major-subsystems" tabindex="-1"><a class="observablehq-header-anchor" href="#3-major-subsystems">3. Major subsystems</a></h2>
 <table>
 <thead>
 <tr>
 <th style="text-align:left">Layer</th>
-<th style="text-align:left">Technology</th>
+<th style="text-align:left">Primary technology</th>
 <th style="text-align:left">Responsibility</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:left">Frontend UI</td>
-<td style="text-align:left">Observable Framework, JavaScript, CSS</td>
-<td style="text-align:left">Page structure, filter controls, legends, sidebar, and documentation pages</td>
+<td style="text-align:left">Startup / orchestration</td>
+<td style="text-align:left"><code>make</code>, SSH, Conda</td>
+<td style="text-align:left">Opens the tunnel, activates the environment, and launches the app</td>
 </tr>
 <tr>
-<td style="text-align:left">Mapping</td>
-<td style="text-align:left">MapLibre GL, D3</td>
-<td style="text-align:left">Service territory rendering, labels, pin layers, hover and selection behavior</td>
+<td style="text-align:left">Frontend shell</td>
+<td style="text-align:left">Observable Framework</td>
+<td style="text-align:left">Hosts pages, layout, modal docs, and app bootstrapping</td>
+</tr>
+<tr>
+<td style="text-align:left">Interactive map layer</td>
+<td style="text-align:left">MapLibre GL + D3</td>
+<td style="text-align:left">Renders territories, wholesale pins, legends, selection state, and time-based interactions</td>
 </tr>
 <tr>
 <td style="text-align:left">Backend API</td>
-<td style="text-align:left">FastAPI, SQLAlchemy</td>
-<td style="text-align:left">Serves service territory geometry, retail/wholesale data, and filtered aggregates</td>
+<td style="text-align:left">FastAPI + SQLAlchemy</td>
+<td style="text-align:left">Exposes service territory and pricing endpoints to the frontend</td>
 </tr>
 <tr>
-<td style="text-align:left">Data Store</td>
+<td style="text-align:left">Persistence layer</td>
 <td style="text-align:left">PostgreSQL</td>
-<td style="text-align:left">Stores service territories, PJM pricing data, and derived monthly values</td>
+<td style="text-align:left">Stores the geography and retail/wholesale comparison data</td>
 </tr>
 </tbody>
 </table>
-<h2 id="4-frontend-structure" tabindex="-1"><a class="observablehq-header-anchor" href="#4-frontend-structure">4. Frontend Structure</a></h2>
-<p>The frontend entry point is <a href="./index.md">index.md</a>. The most important supporting files are:</p>
+<h2 id="4-frontend-design" tabindex="-1"><a class="observablehq-header-anchor" href="#4-frontend-design">4. Frontend design</a></h2>
+<p>The frontend entry page is <code>src/index.md</code>.</p>
+<p>The most important UI modules are:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">File</th>
+<th style="text-align:left">Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>src/index.md</code></td>
+<td style="text-align:left">Page structure, modals, top controls, map container, sidebar, and initial app bootstrapping</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>src/components/map.js</code></td>
+<td style="text-align:left">Initializes the MapLibre map, wires UI controls, attaches click/hover behavior, and syncs the app view state</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>src/managers/app_controller.js</code></td>
+<td style="text-align:left">Central state manager for data loading, color scales, average/monthly views, animation, popups, and zone highlighting</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>src/components/zone_plot.js</code></td>
+<td style="text-align:left">Builds the <strong>Price Analysis</strong> panel and updates the chart for selected territories</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>src/components/ui.js</code></td>
+<td style="text-align:left">Renders the legend, filter summary, and information modals</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>src/components/filter.js</code></td>
+<td style="text-align:left">Reads and stores the current filter state from the URL</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>src/components/picker.js</code></td>
+<td style="text-align:left">Month and year selection control used by the filter modal</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>src/styles/main.css</code></td>
+<td style="text-align:left">Layout, sidebar, legend, modal, and plot panel styling</td>
+</tr>
+</tbody>
+</table>
+<h3 id="frontend-interaction-model" tabindex="-1"><a class="observablehq-header-anchor" href="#frontend-interaction-model">Frontend interaction model</a></h3>
+<p>The interface is built around two main map modes:</p>
 <ul>
-<li><a href="./components/map.js">components/map.js</a>: map initialization, layer creation, sidebar interactions, and view toggles.</li>
-<li><a href="./managers/app_controller.js">managers/app_controller.js</a>: controller logic for loading data, computing map colors, and switching views.</li>
-<li><a href="./components/ui.js">components/ui.js</a>: legends, filter display, and supporting UI helpers.</li>
-<li><a href="./components/filter.js">components/filter.js</a>: current filter state and persisted query parameters.</li>
-<li><a href="./components/picker.js">components/picker.js</a>: date/month selection UI.</li>
-<li><a href="./styles/main.css">styles/main.css</a>: application layout and visual styling.</li>
+<li><strong>Locational View</strong> for orientation and territory identity</li>
+<li><strong>Price View</strong> for retail/wholesale comparison</li>
 </ul>
-<h2 id="5-backend-structure" tabindex="-1"><a class="observablehq-header-anchor" href="#5-backend-structure">5. Backend Structure</a></h2>
-<p>The backend entry point is <a href="../../electricity/api/backend.py">../../electricity/api/backend.py</a>.</p>
-<p>Key backend responsibilities:</p>
+<p>It also supports two time perspectives:</p>
+<ul>
+<li><strong>Avg Price View</strong> for the selected filter window</li>
+<li><strong>month-by-month playback</strong> for time navigation and animation</li>
+</ul>
+<p>The <strong>Price Analysis</strong> panel is intentionally hidden until the user explicitly selects one or more territories from the sidebar.</p>
+<h2 id="5-backend-design" tabindex="-1"><a class="observablehq-header-anchor" href="#5-backend-design">5. Backend design</a></h2>
+<p>The backend is implemented in <code>electricity/api/backend.py</code> using <strong>FastAPI</strong> and <strong>SQLAlchemy</strong>.</p>
+<p>Its responsibilities include:</p>
 <ul>
 <li>loading environment variables with <code>load_dotenv()</code>,</li>
 <li>building the PostgreSQL connection string,</li>
-<li>exposing API endpoints consumed by the frontend,</li>
-<li>querying service territory geometries and pricing aggregates.</li>
+<li>opening database sessions,</li>
+<li>serving geometry and pricing endpoints consumed by the frontend.</li>
 </ul>
-<p>The frontend proxy is configured in <a href="../../electricity/observablehq.config.js">../../electricity/observablehq.config.js</a>, where <code>/api</code> is forwarded to <code>http://127.0.0.1:8000</code> by default or to <code>BACKEND_URL</code> if provided.</p>
-<h2 id="6-data-and-hydration-scripts" tabindex="-1"><a class="observablehq-header-anchor" href="#6-data-and-hydration-scripts">6. Data and Hydration Scripts</a></h2>
-<p>The data ingestion and maintenance scripts live in <a href="./hydrate">hydrate</a>.</p>
-<p>These scripts are part of the broader infrastructure workflow, not the minimum path required to launch the application UI. They are used to populate and maintain the database tables the app expects.</p>
-<p>Examples include:</p>
+<h3 id="key-api-routes" tabindex="-1"><a class="observablehq-header-anchor" href="#key-api-routes">Key API routes</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Endpoint</th>
+<th style="text-align:left">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>/api/service-terr</code></td>
+<td style="text-align:left">Returns service territory geometries used for the polygon layer</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>/api/nodes</code></td>
+<td style="text-align:left">Returns PJM node coordinates used for point mapping</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>/api/service_territory_price_data</code></td>
+<td style="text-align:left">Returns monthly retail + wholesale comparison data filtered by year and month</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>/api/zones</code> and related utility routes</td>
+<td style="text-align:left">Support additional geometry and data access workflows</td>
+</tr>
+</tbody>
+</table>
+<h3 id="proxy-behavior" tabindex="-1"><a class="observablehq-header-anchor" href="#proxy-behavior">Proxy behavior</a></h3>
+<p><code>observablehq.config.js</code> proxies <code>/api</code> requests to <code>http://127.0.0.1:8000</code> by default, which keeps frontend code simple during local development.</p>
+<h2 id="6-data-model-used-by-the-dashboard" tabindex="-1"><a class="observablehq-header-anchor" href="#6-data-model-used-by-the-dashboard">6. Data model used by the dashboard</a></h2>
+<p>The current dashboard is driven by a small number of core data sources:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Table / source</th>
+<th style="text-align:left">Role in the app</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>service_territories</code></td>
+<td style="text-align:left">Retail service territory polygons</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>retail_monthly_rates_pjm</code></td>
+<td style="text-align:left">Monthly retail rate values by utility / territory</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>wholesale_month_price</code></td>
+<td style="text-align:left">Aggregated monthly wholesale values by service territory</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>pjm_lat_long</code></td>
+<td style="text-align:left">Node-level point coordinates for wholesale markers</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>pjm_zone_shapes</code></td>
+<td style="text-align:left">Zone geometry support for additional overlays and highlighting</td>
+</tr>
+</tbody>
+</table>
+<p>The main comparison endpoint performs a <strong>FULL OUTER JOIN</strong> between retail and wholesale monthly tables so the UI can still render even when one side has missing data for a territory-month combination.</p>
+<h2 id="7-state-and-rendering-flow-in-the-frontend" tabindex="-1"><a class="observablehq-header-anchor" href="#7-state-and-rendering-flow-in-the-frontend">7. State and rendering flow in the frontend</a></h2>
+<p>The most important state object lives in <code>MapController</code>.</p>
+<p>That controller is responsible for:</p>
 <ul>
-<li>historical LMP ingestion scripts,</li>
-<li>retail price update scripts,</li>
-<li>status and watchdog utilities,</li>
-<li>database maintenance helpers.</li>
+<li>loading the filtered dataset,</li>
+<li>building <code>monthlyFrames</code> from the API result,</li>
+<li>calculating average retail and wholesale prices,</li>
+<li>updating dynamic color scales,</li>
+<li>switching between locational and price modes,</li>
+<li>driving the animation controls and time slider,</li>
+<li>refreshing popups, legend content, and sidebar colors.</li>
 </ul>
-<p>This distinction matters:</p>
+<p>This design keeps the map, legend, sidebar, and chart synchronized from one shared source of truth.</p>
+<h2 id="8-supporting-data-maintenance-scripts" tabindex="-1"><a class="observablehq-header-anchor" href="#8-supporting-data-maintenance-scripts">8. Supporting data-maintenance scripts</a></h2>
+<p>The <code>src/hydrate/</code> directory contains the data ingestion and maintenance workflow for the broader project.</p>
+<p>These scripts are <strong>supporting infrastructure</strong>, not part of the minimum runtime path for viewing the dashboard.</p>
+<p>Typical responsibilities in that area include:</p>
 <ul>
-<li>launching the app requires the environment, backend, and database connection to be configured,</li>
-<li>fully reproducing the dataset additionally requires populated source tables and ingestion workflows.</li>
+<li>refreshing wholesale data,</li>
+<li>updating retail mapping tables,</li>
+<li>monitoring database sync status,</li>
+<li>database maintenance and watchdog tasks.</li>
 </ul>
-<h2 id="7-external-dependencies" tabindex="-1"><a class="observablehq-header-anchor" href="#7-external-dependencies">7. External Dependencies</a></h2>
-<p>The application depends on several external systems:</p>
+<p>In other words:</p>
+<ul>
+<li><strong>running the app</strong> requires the environment, tunnel, backend, and populated database,</li>
+<li><strong>rebuilding or refreshing the dataset</strong> uses the hydrate scripts.</li>
+</ul>
+<h2 id="9-external-dependencies-and-assumptions" tabindex="-1"><a class="observablehq-header-anchor" href="#9-external-dependencies-and-assumptions">9. External dependencies and assumptions</a></h2>
+<p>The application depends on:</p>
 <ul>
 <li>a reachable PostgreSQL database,</li>
-<li>SSH access to the remote host used by the Makefile tunnel,</li>
-<li>PJM data sources for ingestion workflows,</li>
-<li>a map tile provider for the basemap.</li>
+<li>SSH access for the tunnel configured in the root <code>makefile</code>,</li>
+<li>PJM-derived source data that has already been loaded into the expected tables,</li>
+<li>a working map tile provider for the basemap.</li>
 </ul>
-<p>Current note:</p>
+<p>The current checked-in frontend uses a MapTiler style URL directly in <code>src/components/map.js</code>, which is part of the deployed implementation for this capstone submission.</p>
+<h2 id="10-repository-areas-most-relevant-to-future-contributors" tabindex="-1"><a class="observablehq-header-anchor" href="#10-repository-areas-most-relevant-to-future-contributors">10. Repository areas most relevant to future contributors</a></h2>
+<p>If you are extending or reviewing the completed project, these are the highest-value places to start:</p>
 <ul>
-<li>the checked-in map configuration currently references a MapTiler style URL directly in <a href="./components/map.js">components/map.js</a> rather than reading a map key from <code>.env</code>. That is part of the current code path and should be treated as an implementation detail that may be externalized later.</li>
+<li><code>README.MD</code> for the root quick start</li>
+<li><code>makefile</code> for launch and SSH tunnel behavior</li>
+<li><code>electricity/environment.yml</code> for Python dependencies</li>
+<li><code>electricity/package.json</code> for frontend/backend scripts</li>
+<li><code>src/index.md</code> for the app shell</li>
+<li><code>src/managers/app_controller.js</code> for the core interaction logic</li>
+<li><code>src/components/zone_plot.js</code> for the price analysis chart</li>
 </ul>
-<h2 id="8-repository-areas-relevant-to-reproduction" tabindex="-1"><a class="observablehq-header-anchor" href="#8-repository-areas-relevant-to-reproduction">8. Repository Areas Relevant to Reproduction</a></h2>
-<p>These files are the most important for a new developer trying to understand or reproduce the app:</p>
-<ul>
-<li><a href="../../README.MD">../../README.MD</a>: top-level quick start.</li>
-<li><a href="./SETUP.md">SETUP.md</a>: environment and startup preparation.</li>
-<li><a href="./USER_GUIDE.md">USER_GUIDE.md</a>: domain and UI usage context.</li>
-<li><a href="../../makefile">../../makefile</a>: startup automation and SSH tunnel behavior.</li>
-<li><a href="../../electricity/environment.yml">../../electricity/environment.yml</a>: Conda environment definition.</li>
-<li><a href="../../electricity/package.json">../../electricity/package.json</a>: npm scripts and JavaScript dependencies.</li>
-</ul>
-<h2 id="9-current-boundaries-and-incomplete-areas" tabindex="-1"><a class="observablehq-header-anchor" href="#9-current-boundaries-and-incomplete-areas">9. Current Boundaries and Incomplete Areas</a></h2>
-<p>Some project documentation and infrastructure workflows are still evolving.</p>
-<p>In particular:</p>
-<ul>
-<li>the runtime startup path is cleaner than the full ingestion/rebuild story,</li>
-<li>some ingestion scripts are operational but not yet documented as a polished end-user workflow,</li>
-<li>some architecture details in older notes may lag behind the current PostgreSQL and <code>make app</code> flow.</li>
-</ul>
-<p>This file should therefore be read as a current-state architecture summary, not as a claim that every infrastructure workflow has already been packaged for first-time users.</p>
+<h2 id="11-final-note" tabindex="-1"><a class="observablehq-header-anchor" href="#11-final-note">11. Final note</a></h2>
+<p>This architecture reflects the final state of the capstone application: a complete interactive comparison tool built around an Observable frontend, a FastAPI backend, and a PostgreSQL-backed pricing dataset.</p>
+<p>It should be read as the technical source of truth for how the finished system is organized and how its runtime pieces fit together.</p>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-06T19:11:52">Apr 6, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-09T20:13:51">Apr 9, 2026</a>.</div>
 </footer>
 </div>
 </body>
