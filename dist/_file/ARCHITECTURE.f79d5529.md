@@ -21,7 +21,7 @@ The application has five main runtime layers:
 4. **FastAPI backend** for API endpoints and database access
 5. **PostgreSQL data layer** for service territory, retail, and wholesale pricing data
 
-At runtime, the frontend talks to the backend over local HTTP, and the backend queries the PostgreSQL database using credentials loaded from `electricity/.env`.
+At runtime, the frontend talks to the backend over local HTTP, and the backend queries the PostgreSQL database using credentials loaded from the repository-root `.env` file.
 
 ## 2. End-to-end runtime flow
 
@@ -33,7 +33,7 @@ The normal local startup path is:
    - frees local ports if necessary,
    - opens the SSH tunnel used for database access.
 3. The `lmp-lite` Conda environment is activated.
-4. The working directory changes into `electricity/`.
+4. The working directory stays at the repository root.
 5. `npm run dev` starts both services:
    - Observable frontend on port `3000`
    - FastAPI backend on port `8000`
@@ -89,7 +89,7 @@ The **Price Analysis** panel is intentionally hidden until the user explicitly s
 
 ## 5. Backend design
 
-The backend is implemented in `electricity/api/backend.py` using **FastAPI** and **SQLAlchemy**.
+The backend is implemented in `api/backend.py` using **FastAPI** and **SQLAlchemy**.
 
 Its responsibilities include:
 
@@ -176,8 +176,8 @@ If you are extending or reviewing the completed project, these are the highest-v
 
 - `README.MD` for the root quick start
 - `makefile` for launch and SSH tunnel behavior
-- `electricity/environment.yml` for Python dependencies
-- `electricity/package.json` for frontend/backend scripts
+- `environment.yml` for Python dependencies
+- `package.json` for frontend/backend scripts
 - `src/index.md` for the app shell
 - `src/managers/app_controller.js` for the core interaction logic
 - `src/components/zone_plot.js` for the price analysis chart

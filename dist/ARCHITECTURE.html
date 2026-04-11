@@ -69,7 +69,7 @@ import "./_observablehq/client.16b578fc.js";
 <li><strong>FastAPI backend</strong> for API endpoints and database access</li>
 <li><strong>PostgreSQL data layer</strong> for service territory, retail, and wholesale pricing data</li>
 </ol>
-<p>At runtime, the frontend talks to the backend over local HTTP, and the backend queries the PostgreSQL database using credentials loaded from <code>electricity/.env</code>.</p>
+<p>At runtime, the frontend talks to the backend over local HTTP, and the backend queries the PostgreSQL database using credentials loaded from the repository-root <code>.env</code> file.</p>
 <h2 id="2-end-to-end-runtime-flow" tabindex="-1"><a class="observablehq-header-anchor" href="#2-end-to-end-runtime-flow">2. End-to-end runtime flow</a></h2>
 <p>The normal local startup path is:</p>
 <ol>
@@ -82,7 +82,7 @@ import "./_observablehq/client.16b578fc.js";
 </ul>
 </li>
 <li>The <code>lmp-lite</code> Conda environment is activated.</li>
-<li>The working directory changes into <code>electricity/</code>.</li>
+<li>The working directory stays at the repository root.</li>
 <li><code>npm run dev</code> starts both services:
 <ul>
 <li>Observable frontend on port <code>3000</code></li>
@@ -196,7 +196,7 @@ import "./_observablehq/client.16b578fc.js";
 </ul>
 <p>The <strong>Price Analysis</strong> panel is intentionally hidden until the user explicitly selects one or more territories from the sidebar.</p>
 <h2 id="5-backend-design" tabindex="-1"><a class="observablehq-header-anchor" href="#5-backend-design">5. Backend design</a></h2>
-<p>The backend is implemented in <code>electricity/api/backend.py</code> using <strong>FastAPI</strong> and <strong>SQLAlchemy</strong>.</p>
+<p>The backend is implemented in <code>api/backend.py</code> using <strong>FastAPI</strong> and <strong>SQLAlchemy</strong>.</p>
 <p>Its responsibilities include:</p>
 <ul>
 <li>loading environment variables with <code>load_dotenv()</code>,</li>
@@ -308,8 +308,8 @@ import "./_observablehq/client.16b578fc.js";
 <ul>
 <li><code>README.MD</code> for the root quick start</li>
 <li><code>makefile</code> for launch and SSH tunnel behavior</li>
-<li><code>electricity/environment.yml</code> for Python dependencies</li>
-<li><code>electricity/package.json</code> for frontend/backend scripts</li>
+<li><code>environment.yml</code> for Python dependencies</li>
+<li><code>package.json</code> for frontend/backend scripts</li>
 <li><code>src/index.md</code> for the app shell</li>
 <li><code>src/managers/app_controller.js</code> for the core interaction logic</li>
 <li><code>src/components/zone_plot.js</code> for the price analysis chart</li>
@@ -319,7 +319,7 @@ import "./_observablehq/client.16b578fc.js";
 <p>It should be read as the technical source of truth for how the finished system is organized and how its runtime pieces fit together.</p>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-09T20:13:51">Apr 9, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-11T16:25:16">Apr 11, 2026</a>.</div>
 </footer>
 </div>
 </body>

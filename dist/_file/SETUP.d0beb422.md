@@ -12,7 +12,7 @@ The shortest reliable path is:
 1. pull the latest repository changes,
 2. create or update the Conda environment,
 3. install the frontend dependencies,
-4. place the required `.env` file in `electricity/`,
+4. place the required `.env` file in the repository root,
 5. install the SSH key used by the root `makefile`,
 6. run `make app` from the project root.
 
@@ -48,25 +48,23 @@ git pull
 From the repository root:
 
 ```bash
-conda env create -f electricity/environment.yml
+conda env create -f environment.yml
 conda activate lmp-lite
 ```
 
 If the environment already exists and you want to refresh it to match the final dependency file:
 
 ```bash
-conda env update -f electricity/environment.yml --prune
+conda env update -f environment.yml --prune
 conda activate lmp-lite
 ```
 
 ## 4. Install frontend dependencies
 
-The frontend and backend startup scripts are defined in `electricity/package.json`.
+The frontend and backend startup scripts are defined in the root `package.json`.
 
 ```bash
-cd electricity
 npm install
-cd ..
 ```
 
 ## 5. Place the `.env` file in the correct location
@@ -74,7 +72,7 @@ cd ..
 For this project, the `.env` file should live in:
 
 ```text
-electricity/.env
+.env
 ```
 
 Use the credentials you were provided privately. At minimum, the backend expects:
@@ -87,9 +85,9 @@ DB_PORT=5433
 DB_NAME=your_database_name
 ```
 
-### Why `electricity/.env`?
+### Why the repository-root `.env`?
 
-The backend is started from the `electricity/` directory through `npm run dev`, so placing the file there is the most reliable way for `load_dotenv()` in `api/backend.py` to load it consistently.
+The backend is now started from the repository root through `npm run dev`, so keeping `.env` at the root is the most reliable way for `load_dotenv()` in `api/backend.py` to load it consistently.
 
 ## 6. Install the SSH key used by the root `makefile`
 
@@ -154,14 +152,12 @@ If the app is running in the foreground, you can also stop it with `Ctrl-C`.
 If you only want to confirm the frontend docs and pages build correctly:
 
 ```bash
-cd electricity
 npm run build
 ```
 
 If you want to inspect the available npm scripts:
 
 ```bash
-cd electricity
 npm run
 ```
 
@@ -185,7 +181,7 @@ or place the permanent key at:
 
 Check that:
 
-- `electricity/.env` exists,
+- `.env` exists,
 - `DB_HOST=127.0.0.1`,
 - `DB_PORT=5433`,
 - the SSH tunnel started successfully,
@@ -200,9 +196,7 @@ Make sure Conda or Miniconda is installed and initialized for your shell.
 Reinstall dependencies:
 
 ```bash
-cd electricity
 npm install
-cd ..
 ```
 
 Then retry:

@@ -63,7 +63,7 @@ import "./_observablehq/client.16b578fc.js";
 <li>pull the latest repository changes,</li>
 <li>create or update the Conda environment,</li>
 <li>install the frontend dependencies,</li>
-<li>place the required <code>.env</code> file in <code>electricity/</code>,</li>
+<li>place the required <code>.env</code> file in the repository root,</li>
 <li>install the SSH key used by the root <code>makefile</code>,</li>
 <li>run <code>make app</code> from the project root.</li>
 </ol>
@@ -109,22 +109,20 @@ import "./_observablehq/client.16b578fc.js";
 </code></pre>
 <h2 id="3-create-the-conda-environment" tabindex="-1"><a class="observablehq-header-anchor" href="#3-create-the-conda-environment">3. Create the Conda environment</a></h2>
 <p>From the repository root:</p>
-<pre data-language="bash"><code class="language-bash">conda <span class="hljs-built_in">env</span> create -f electricity/environment.yml
+<pre data-language="bash"><code class="language-bash">conda <span class="hljs-built_in">env</span> create -f environment.yml
 conda activate lmp-lite
 </code></pre>
 <p>If the environment already exists and you want to refresh it to match the final dependency file:</p>
-<pre data-language="bash"><code class="language-bash">conda <span class="hljs-built_in">env</span> update -f electricity/environment.yml --prune
+<pre data-language="bash"><code class="language-bash">conda <span class="hljs-built_in">env</span> update -f environment.yml --prune
 conda activate lmp-lite
 </code></pre>
 <h2 id="4-install-frontend-dependencies" tabindex="-1"><a class="observablehq-header-anchor" href="#4-install-frontend-dependencies">4. Install frontend dependencies</a></h2>
-<p>The frontend and backend startup scripts are defined in <code>electricity/package.json</code>.</p>
-<pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> electricity
-npm install
-<span class="hljs-built_in">cd</span> ..
+<p>The frontend and backend startup scripts are defined in the root <code>package.json</code>.</p>
+<pre data-language="bash"><code class="language-bash">npm install
 </code></pre>
 <h2 id="5-place-the-env-file-in-the-correct-location" tabindex="-1"><a class="observablehq-header-anchor" href="#5-place-the-env-file-in-the-correct-location">5. Place the <code>.env</code> file in the correct location</a></h2>
 <p>For this project, the <code>.env</code> file should live in:</p>
-<pre data-language="text"><code class="language-text">electricity/.env
+<pre data-language="text"><code class="language-text">.env
 </code></pre>
 <p>Use the credentials you were provided privately. At minimum, the backend expects:</p>
 <pre data-language="ini"><code class="language-ini"><span class="hljs-attr">DB_USER</span>=your_database_user
@@ -133,8 +131,8 @@ npm install
 <span class="hljs-attr">DB_PORT</span>=<span class="hljs-number">5433</span>
 <span class="hljs-attr">DB_NAME</span>=your_database_name
 </code></pre>
-<h3 id="why-electricity-env" tabindex="-1"><a class="observablehq-header-anchor" href="#why-electricity-env">Why <code>electricity/.env</code>?</a></h3>
-<p>The backend is started from the <code>electricity/</code> directory through <code>npm run dev</code>, so placing the file there is the most reliable way for <code>load_dotenv()</code> in <code>api/backend.py</code> to load it consistently.</p>
+<h3 id="why-the-repository-root-env" tabindex="-1"><a class="observablehq-header-anchor" href="#why-the-repository-root-env">Why the repository-root <code>.env</code>?</a></h3>
+<p>The backend is now started from the repository root through <code>npm run dev</code>, so keeping <code>.env</code> at the root is the most reliable way for <code>load_dotenv()</code> in <code>api/backend.py</code> to load it consistently.</p>
 <h2 id="6-install-the-ssh-key-used-by-the-root-makefile" tabindex="-1"><a class="observablehq-header-anchor" href="#6-install-the-ssh-key-used-by-the-root-makefile">6. Install the SSH key used by the root <code>makefile</code></a></h2>
 <p>The application expects one of these keys:</p>
 <ul>
@@ -177,12 +175,10 @@ EOF
 <p>If the app is running in the foreground, you can also stop it with <code>Ctrl-C</code>.</p>
 <h2 id="9-useful-validation-commands" tabindex="-1"><a class="observablehq-header-anchor" href="#9-useful-validation-commands">9. Useful validation commands</a></h2>
 <p>If you only want to confirm the frontend docs and pages build correctly:</p>
-<pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> electricity
-npm run build
+<pre data-language="bash"><code class="language-bash">npm run build
 </code></pre>
 <p>If you want to inspect the available npm scripts:</p>
-<pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> electricity
-npm run
+<pre data-language="bash"><code class="language-bash">npm run
 </code></pre>
 <h2 id="10-troubleshooting" tabindex="-1"><a class="observablehq-header-anchor" href="#10-troubleshooting">10. Troubleshooting</a></h2>
 <h3 id="make-app-says-no-ssh-key-was-found" tabindex="-1"><a class="observablehq-header-anchor" href="#make-app-says-no-ssh-key-was-found"><code>make app</code> says no SSH key was found</a></h3>
@@ -195,7 +191,7 @@ npm run
 <h3 id="the-backend-cannot-connect-to-the-database" tabindex="-1"><a class="observablehq-header-anchor" href="#the-backend-cannot-connect-to-the-database">The backend cannot connect to the database</a></h3>
 <p>Check that:</p>
 <ul>
-<li><code>electricity/.env</code> exists,</li>
+<li><code>.env</code> exists,</li>
 <li><code>DB_HOST=127.0.0.1</code>,</li>
 <li><code>DB_PORT=5433</code>,</li>
 <li>the SSH tunnel started successfully,</li>
@@ -205,9 +201,7 @@ npm run
 <p>Make sure Conda or Miniconda is installed and initialized for your shell.</p>
 <h3 id="the-frontend-fails-to-load" tabindex="-1"><a class="observablehq-header-anchor" href="#the-frontend-fails-to-load">The frontend fails to load</a></h3>
 <p>Reinstall dependencies:</p>
-<pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> electricity
-npm install
-<span class="hljs-built_in">cd</span> ..
+<pre data-language="bash"><code class="language-bash">npm install
 </code></pre>
 <p>Then retry:</p>
 <pre data-language="bash"><code class="language-bash">make app
@@ -222,7 +216,7 @@ npm install
 <p>For product usage, see <a href="./USER_GUIDE">User Guide</a>. For technical design, see <a href="./ARCHITECTURE">System Architecture</a>.</p>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-09T20:13:51">Apr 9, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-11T16:25:16">Apr 11, 2026</a>.</div>
 </footer>
 </div>
 </body>

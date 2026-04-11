@@ -27,11 +27,9 @@ git clone https://github.com/nucapstone/project-spring26-darbyatNE.git
 ### 2. Create the Conda environment and NPM dependencies
 
 ```bash
-cd electricity
 conda env create -f environment.yml
 conda activate lmp-lite
 npm install
-cd ..
 ```
 
 ### 3. Install the SSH key used by the `Makefile`
@@ -50,7 +48,7 @@ EOF
 
 ### 4. Save the provided `.env` file at the repository root
 
-Place the `.env` file you were sent privately in the /electrciity directory of the cloned repository (the same directory as `README.MD` and `makefile`). The required credentials are already included there.
+Place the `.env` file you were sent privately in the cloned repository root (the same directory as `README.MD`, `makefile`, and `package.json`). The required credentials are already included there.
 
 ### 5. Run the Application
 
@@ -62,17 +60,17 @@ make app
 
 ## Documentation
 
-### 1. [User Guide & Domain Logic](electricity/src/USER_GUIDE.md) 👈 *Start Here for Context*
+### 1. [User Guide & Domain Logic](src/USER_GUIDE.md) 👈 *Start Here for Context*
 *   **Key Terms:** What are PJM, LMP, retail rates, and price spreads?
 *   **How to Use the Tool:** Navigating the interface and interpreting visualizations.
 *   **Workflow:** Steps to compare historical wholesale and retail prices.
 
-### 2. [Technical Setup & Data Ingestion](electricity/src/SETUP.md) 👈 *Start Here for Building the Infrastructure*
+### 2. [Technical Setup & Data Ingestion](src/SETUP.md) 👈 *Start Here for Building the Infrastructure*
 *   **Environment Preparation:** Building the Conda and npm environment required by `make app`.
 *   **Backend Connectivity:** Setting up `.env` keys and SSH tunnel assumptions.
 *   **Infrastructure Notes:** Understanding what is required beyond basic app startup.
 
-### 3. [Architecture Overview](electricity/src/ARCHITECTURE.md)
+### 3. [Architecture Overview](src/ARCHITECTURE.md)
 *   **Runtime Flow:** How the frontend, backend, Makefile, and database interact.
 *   **Project Layout:** Where the main application components live.
 *   **Current Boundaries:** What is fully documented versus still evolving.
