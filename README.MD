@@ -10,7 +10,7 @@ The Electricity Retail/Wholesale Comparison Tool is designed to enable users to 
 
 <div align="center">
   <img src="src/img/dashboard.png" alt="Retail Service Territories" width="600">
-  <p><em>This map visualizes the physical territory served by Electric Service Providers within the PJM footprint</em></p>
+  <p><em>This map shows PJM retail service territories and the wholesale pricing points used to compute each territory's average price.</em></p>
 </div>
 
 ## Quick Start Guide
