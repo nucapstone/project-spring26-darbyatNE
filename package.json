@@ -9,6 +9,7 @@
     "dev": "concurrently \"npm:dev:frontend\" \"npm:dev:backend\"",
     "clean": "rimraf src/.observablehq/cache",
     "build": "observable build",
+    "build:docs": "npm run build && node -e \"require('fs').writeFileSync('docs/.nojekyll', '')\"",
     "deploy": "observable deploy",
     "observable": "observable"
   },

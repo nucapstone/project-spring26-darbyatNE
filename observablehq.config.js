@@ -3,6 +3,7 @@
 
 export default {
   root: "src",
+  output: "docs",
   title: "PJM LMP Visualization",
   pager: false, 
   head: `

@@ -9,7 +9,7 @@ The Electricity Retail/Wholesale Comparison Tool is designed to enable users to 
 # PJM ISO Retail Electricity Service Provider Territories 
 
 <div align="center">
-  <img src="docs/dashboard.png" alt="Retail Service Territories" width="600">
+  <img src="src/img/dashboard.png" alt="Retail Service Territories" width="600">
   <p><em>This map visualizes the physical territory served by Electric Service Providers within the PJM footprint</em></p>
 </div>
 
@@ -57,6 +57,41 @@ With either the AWS Key or a Temp Key Installed, startup the app from the projec
 ```bash
 make app
 ```
+
+## GitHub Pages (docs folder)
+
+This repository is configured to publish the static frontend from `docs/`.
+
+### 1. Build the Pages output into `docs/`
+
+```bash
+npm run build:docs
+```
+
+This command builds the Observable site into `docs/` and writes `docs/.nojekyll` so folders such as `_observablehq` and `_npm` are served correctly by GitHub Pages.
+
+### 2. Commit and push
+
+```bash
+git add docs package.json
+git commit -m "Build docs site for GitHub Pages"
+git push origin main
+```
+
+### 3. Set Pages source in GitHub
+
+In GitHub repository settings:
+
+- **Settings** -> **Pages**
+- **Build and deployment**: **Deploy from a branch**
+- **Branch**: `main`
+- **Folder**: `/docs`
+
+After that, GitHub Pages serves the dashboard from the contents of `docs/`.
+
+### Backend note for public clones
+
+The GitHub Pages site is frontend-only. For full local app functionality after cloning, provide users with temporary `.env` credentials and a temporary SSH key, then follow the setup steps in this README (`make temp` + `.env` in repo root + `make app`).
 
 ## Documentation
 

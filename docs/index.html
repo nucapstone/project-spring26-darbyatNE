@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.13.4">
+<title>PJM Wholesale/Retail Market Map | PJM LMP Visualization</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight,alt,wide.9b64840a.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight,alt,wide.9b64840a.css">
+<link rel="modulepreload" href="./_observablehq/client.16b578fc.js">
+<link rel="modulepreload" href="./_observablehq/runtime.607a8173.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.277aeab8.js">
+<link rel="modulepreload" href="./_npm/marked@17.0.1/b499876a.js">
+<link rel="modulepreload" href="./_import/components/map.c8380875.js">
+<link rel="modulepreload" href="./_import/components/ui.1db8755a.js">
+<link rel="modulepreload" href="./_import/components/filter.9314faac.js">
+<link rel="modulepreload" href="./_import/components/picker.0a54784a.js">
+<link rel="modulepreload" href="./_import/components/zone_plot.c7713518.js">
+<link rel="modulepreload" href="./_import/utils/config.d6642fe5.js">
+<link rel="modulepreload" href="./_import/managers/app_controller.316767f8.js">
+<link rel="modulepreload" href="./_npm/maplibre-gl@5.15.0/4c3c9e9c.js">
+<link rel="modulepreload" href="./_npm/d3@7.9.0/e780feca.js">
+<link rel="modulepreload" href="./_npm/@observablehq/plot@0.6.17/d761ef9b.js">
+<link rel="modulepreload" href="./_npm/d3-array@3.2.4/e93ca09f.js">
+<link rel="modulepreload" href="./_npm/d3-axis@3.0.0/0f2de24d.js">
+<link rel="modulepreload" href="./_npm/d3-brush@3.0.0/65eb105b.js">
+<link rel="modulepreload" href="./_npm/d3-chord@3.0.1/7ef8fb2e.js">
+<link rel="modulepreload" href="./_npm/d3-color@3.1.0/aeb57b94.js">
+<link rel="modulepreload" href="./_npm/d3-contour@4.0.2/1d2aed74.js">
+<link rel="modulepreload" href="./_npm/d3-delaunay@6.0.4/5ced1d52.js">
+<link rel="modulepreload" href="./_npm/d3-dispatch@3.0.1/9ba9c7f3.js">
+<link rel="modulepreload" href="./_npm/d3-drag@3.0.0/4202580c.js">
+<link rel="modulepreload" href="./_npm/d3-dsv@3.0.1/9cffc2bd.js">
+<link rel="modulepreload" href="./_npm/d3-ease@3.0.1/cdd7e898.js">
+<link rel="modulepreload" href="./_npm/d3-fetch@3.0.1/b4e2ad9a.js">
+<link rel="modulepreload" href="./_npm/d3-force@3.0.0/5e804d15.js">
+<link rel="modulepreload" href="./_npm/d3-format@3.1.0/86074ef6.js">
+<link rel="modulepreload" href="./_npm/d3-geo@3.1.1/40599fb3.js">
+<link rel="modulepreload" href="./_npm/d3-hierarchy@3.1.2/e49e792c.js">
+<link rel="modulepreload" href="./_npm/d3-interpolate@3.0.1/8d1e5425.js">
+<link rel="modulepreload" href="./_npm/d3-path@3.1.0/20d3f133.js">
+<link rel="modulepreload" href="./_npm/d3-polygon@3.0.1/7553081f.js">
+<link rel="modulepreload" href="./_npm/d3-quadtree@3.0.1/0dfd751c.js">
+<link rel="modulepreload" href="./_npm/d3-random@3.0.1/3c90ee06.js">
+<link rel="modulepreload" href="./_npm/d3-scale@4.0.2/843b6a76.js">
+<link rel="modulepreload" href="./_npm/d3-scale-chromatic@3.1.0/ba24c2e7.js">
+<link rel="modulepreload" href="./_npm/d3-selection@3.0.0/4d94e5b7.js">
+<link rel="modulepreload" href="./_npm/d3-shape@3.2.0/6d3a6726.js">
+<link rel="modulepreload" href="./_npm/d3-time@3.1.0/9f03c579.js">
+<link rel="modulepreload" href="./_npm/d3-time-format@4.1.0/07c9626f.js">
+<link rel="modulepreload" href="./_npm/d3-timer@3.0.1/b58a267d.js">
+<link rel="modulepreload" href="./_npm/d3-transition@3.0.1/004da2ac.js">
+<link rel="modulepreload" href="./_npm/d3-zoom@3.0.0/b5786b3f.js">
+<link rel="modulepreload" href="./_npm/isoformat@0.2.1/18cbf477.js">
+<link rel="modulepreload" href="./_npm/interval-tree-1d@1.0.4/53fe8176.js">
+<link rel="modulepreload" href="./_npm/internmap@2.0.3/e08981d9.js">
+<link rel="modulepreload" href="./_npm/delaunator@5.0.1/02d43215.js">
+<link rel="modulepreload" href="./_npm/binary-search-bounds@2.0.5/cbf6ba23.js">
+<link rel="modulepreload" href="./_npm/robust-predicates@3.0.2/aa00730b.js">
+
+        <link rel="icon" href="./_file/img/lmp_icon.7d29060b.png" type="image/png">
+        <meta property="og:image" content="/img/observable.png">
+        
+<script type="module">
+
+import {define} from "./_observablehq/client.16b578fc.js";
+import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
+
+registerFile("./ARCHITECTURE.md", {"name":"./ARCHITECTURE.md","mimeType":"text/markdown","path":"./_file/ARCHITECTURE.f79d5529.md","lastModified":1775939990413,"size":8435});
+registerFile("./SETUP.md", {"name":"./SETUP.md","mimeType":"text/markdown","path":"./_file/SETUP.d0beb422.md","lastModified":1775939990413,"size":4991});
+registerFile("./USER_GUIDE.md", {"name":"./USER_GUIDE.md","mimeType":"text/markdown","path":"./_file/USER_GUIDE.8fab41c6.md","lastModified":1775844119170,"size":7436});
+
+define({id: "21888d86", inputs: ["FileAttachment"], outputs: ["marked","initApp","initInfoModals","displayCurrentFilter","filter","saveFilter","dateTimeRangePicker","picker","mountPoint","lockTopControlBoxSize","cleanMarkdown","btnGuide","btnSetup","btnArch"], body: async (FileAttachment) => {
+const [{marked}, {initApp}, {initInfoModals, displayCurrentFilter}, {filter, saveFilter}, {dateTimeRangePicker}] = await Promise.all([import("./_npm/marked@17.0.1/b499876a.js"), import("./_import/components/map.c8380875.js"), import("./_import/components/ui.1db8755a.js"), import("./_import/components/filter.9314faac.js"), import("./_import/components/picker.0a54784a.js")]);
+ 
+
+// 1. Initialize UI
+initInfoModals();
+
+// 2. Initialize Picker
+const picker = dateTimeRangePicker({
+  width: 750, 
+  minYear: 2020,
+  maxYear: 2026,
+  initialStartYear: filter.startYear || 2020,
+  initialEndYear: filter.endYear || 2026,
+  initialMonths: filter.months || [],
+});
+
+// 3. Mount Picker
+const mountPoint = document.getElementById("picker-mount-point");
+if (mountPoint) {
+    mountPoint.innerHTML = "";
+    mountPoint.appendChild(picker);
+}
+
+// 4. Handle Live Updates (Visual only)
+picker.addEventListener('input', (e) => {
+  const val = picker.value;
+  if (!val) return;
+
+  const isAllMonths = val.months && val.months.length === 12;
+
+  const newFilterState = {
+    startYear: val.startYear,
+    endYear: val.endYear,
+    months: isAllMonths ? null : val.months, 
+  };
+
+  saveFilter(newFilterState);
+  displayCurrentFilter(newFilterState);
+});
+
+// 5. Handle APPLY Button (Reloads Data)
+picker.addEventListener('apply', (e) => {
+  console.log("✅ Apply button clicked");
+  
+  // Get the latest values from the picker
+  const val = picker.value;
+
+  // Close modal
+  const modal = document.getElementById('filter-modal');
+  if (modal) modal.close();
+
+  // Show loading state
+  displayCurrentFilter(val, "Loading Data...");
+
+  // Reload page with new URL parameters
+  setTimeout(() => {
+    const url = new URL(window.location);
+    
+    // --- KEY FIX: Save the Years to URL ---
+    url.searchParams.set("start_year", val.startYear);
+    url.searchParams.set("end_year", val.endYear);
+    
+    // Save Months
+    if (val.months && val.months.length > 0 && val.months.length < 12) {
+        url.searchParams.set("months", val.months.join(","));
+    } else {
+        url.searchParams.delete("months");
+    }
+
+    url.searchParams.set("fetch", "true");
+    window.location.href = url.toString();
+  }, 100);
+});
+
+// 6. Initial Header Display
+displayCurrentFilter(filter);
+
+function lockTopControlBoxSize() {
+  const priceBox = document.querySelector('.top-controls-wrapper .price-selector');
+  const filterBox = document.getElementById('filter-trigger');
+  if (!priceBox || !filterBox) return;
+
+  // First measure natural loaded size.
+  priceBox.style.width = 'auto';
+  priceBox.style.height = 'auto';
+  filterBox.style.height = 'auto';
+
+  const priceRect = priceBox.getBoundingClientRect();
+  const filterRect = filterBox.getBoundingClientRect();
+
+  const targetHeight = Math.ceil(Math.max(priceRect.height, filterRect.height));
+  const priceWidth = Math.ceil(priceRect.width);
+  if (!filterBox.dataset.initialWidth) {
+    filterBox.dataset.initialWidth = `${Math.ceil(filterRect.width)}px`;
+  }
+
+  // Keep price width fixed; keep filter at its loaded wider width.
+  priceBox.style.width = `${priceWidth}px`;
+  filterBox.style.width = filterBox.dataset.initialWidth;
+  priceBox.style.height = `${targetHeight}px`;
+  filterBox.style.height = `${targetHeight}px`;
+}
+
+setTimeout(lockTopControlBoxSize, 0);
+window.addEventListener('load', lockTopControlBoxSize, {once: true});
+
+
+// =========================================================
+// DOCS & MAP LOADING
+// =========================================================
+
+function cleanMarkdown(text) {
+  // FIX: Use hex code \x2d for hyphen (-) to prevent the Markdown parser
+  // from seeing '---' and breaking the file structure.
+  const dash = "\x2d\x2d\x2d"; 
+  const pattern = "^" + dash + "[\\s\\S]*?" + dash;
+  const regex = new RegExp(pattern);
+  return text.replace(regex, '').trim();
+}
+
+(async () => {
+  try {
+    const [setupText, guideText, archText] = await Promise.all([
+      FileAttachment("./SETUP.md").text(),
+      FileAttachment("./USER_GUIDE.md").text(),
+      FileAttachment("./ARCHITECTURE.md").text()
+    ]);
+
+    const setupEl = document.getElementById('setup-content');
+    if (setupEl) setupEl.innerHTML = marked.parse(cleanMarkdown(setupText));
+
+    const guideEl = document.getElementById('guide-content');
+    if (guideEl) guideEl.innerHTML = marked.parse(cleanMarkdown(guideText));
+
+    const archEl = document.getElementById('arch-content');
+    if (archEl) archEl.innerHTML = marked.parse(cleanMarkdown(archText));
+    
+  } catch (err) {
+    console.error("Error loading docs:", err);
+  }
+})();
+
+const btnGuide = document.getElementById('btn-guide');
+if (btnGuide) {
+  btnGuide.addEventListener('click', (e) => {
+    e.preventDefault();
+    const modal = document.getElementById('guide-modal');
+    if (modal) modal.showModal();
+    const menu = document.getElementById('header-help-menu');
+    if (menu) menu.style.display = 'none';
+  });
+}
+
+const btnSetup = document.getElementById('btn-setup');
+if (btnSetup) {
+  btnSetup.addEventListener('click', (e) => {
+    e.preventDefault();
+    const modal = document.getElementById('setup-modal');
+    if (modal) modal.showModal();
+    const menu = document.getElementById('header-help-menu');
+    if (menu) menu.style.display = 'none';
+  });
+}
+
+const btnArch = document.getElementById('btn-arch');
+if (btnArch) {
+  btnArch.addEventListener('click', (e) => {
+    e.preventDefault();
+    const modal = document.getElementById('arch-modal');
+    if (modal) modal.showModal();
+    const menu = document.getElementById('header-help-menu');
+    if (menu) menu.style.display = 'none';
+  });
+}
+
+// Initialize Map App
+initApp();
+
+document.addEventListener('click', function(event) {
+  const menu = document.getElementById('header-help-menu');
+  const btn = event.target.closest('.header-btn');
+  if (menu && menu.style.display === 'block' && !btn && !menu.contains(event.target)) {
+    menu.style.display = 'none';
+  }
+});
+return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dateTimeRangePicker,picker,mountPoint,lockTopControlBoxSize,cleanMarkdown,btnGuide,btnSetup,btnArch};
+}});
+
+</script>
+</head>
+<body>
+<div id="observablehq-center">
+<main id="observablehq-main" class="observablehq">
+<script>
+  try { localStorage.setItem("observablehq:sidebar", "false"); } catch (e) {}
+
+  // 1. Add a click event listener to the filter trigger
+  const filterTrigger = document.getElementById('filter-trigger');
+  if (filterTrigger) {
+      filterTrigger.addEventListener('click', (e) => {
+          const filterModal = document.getElementById('filter-modal');
+          if (filterModal) {
+              filterModal.showModal(); 
+          }
+      });
+  }
+</script>
+<link rel="stylesheet" href="./_file/styles/main.ad88006c.css">
+<link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
+<!-- 1. Header With Ribbon for Help Docs & View Control -->
+<div id="page-header">
+  <div class="header-left"></div>
+  <h1>Retail Electricity Service Territories Map</h1>
+  <div class="header-right" style="display: flex; align-items: center; gap: 15px;">    
+    <!-- View Mode Selector (HIDDEN) -->
+    <div class="control-group" style="display: none; align-items: center; gap: 5px;">
+        <label for="view-mode-selector" style="color: white; font-size: 12px; font-weight: bold;">View:</label>
+        <select id="view-mode-selector" class="header-select-box" style="padding: 4px; border-radius: 4px; border: none;">
+            <option value="2d">Flat Map (2D)</option>
+            <option value="3d">Height Map (3D)</option>
+            <option value="contour">Heatmap (Contour)</option>
+        </select>
+    </div>
+    <!-- Getting Started Menu -->
+    <div style="display: block; position: relative;">
+      <button onclick="const m = document.getElementById('header-help-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block';" class="header-btn">
+          🚀 Getting Started <span style="font-size: 10px;">▼</span>
+      </button>
+      <!-- Dropdown Menu -->
+      <div id="header-help-menu" class="header-dropdown right-aligned" style="min-width: 175px;">
+          <a href="#" id="btn-guide">📖 User Guide</a>
+        <a href="#" id="btn-setup">⚙️ Setup / Environment</a>
+          <a href="#" id="btn-arch">🏗️ System Architecture</a>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Top Controls (Price Type & Filter) -->
+<div class="top-controls-wrapper" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 20px; background: #f0f0f0; border-bottom: 1px solid #ddd; margin-bottom: 0;">
+    <!-- Left: Price Selector -->
+    <div class="price-selector" style="display: flex; align-items: center; gap: 12px; background: #dcdcdc; padding: 6px 12px; border: 1px solid #000; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); box-sizing: border-box; flex: 0 0 auto;">
+        <span class="price-label" style="font-weight: bold; color: #555; font-size: 12px;">⚙️ Price Type →</span>
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" id="price-retail" name="price-type" value="retail" checked="" style="cursor: pointer;">
+            <label for="price-retail" style="cursor: pointer; font-size: 14px;">Retail</label>
+        </div>
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" id="price-wholesale" name="price-type" value="wholesale" checked="" style="cursor: pointer;">
+            <label for="price-wholesale" style="cursor: pointer; font-size: 14px;">Wholesale</label>
+        </div>
+    </div>
+    <!-- Right: Filter Trigger -->
+    <!-- IMPORTANT: The ID inside here must be 'current-filter-display' -->
+    <div class="filter-container" id="filter-trigger" style="display: flex; align-items: center; justify-content: flex-start; gap: 12px; cursor: pointer; background: #dcdcdc; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); box-sizing: border-box; flex: 1 1 auto; min-width: 300px; margin-left: 16px;" title="Click to configure filters">
+        <span class="filter-label" style="font-size: 12px; color: #666; font-weight: 600;">⚙️ Selected Months →</span>
+        <div id="current-filter-display" style="min-width: 120px; text-align: left;">
+            <span style="color: #999; font-style: italic; font-size: 12px;">Loading...</span>
+        </div>
+    </div>
+</div>
+<!-- Main Container -->
+<div id="main-container">
+  <div id="map-container">
+    <div id="map"></div>
+    <div id="legend"></div>
+    <div id="controls-container">
+      <button id="avg-btn">Avg Price View</button>
+      <div id="speed-box">
+        <label>Speed</label>
+        <input type="range" id="speed-slider" min="100" max="3000" step="100" value="1000">
+      </div>
+      <button id="play-btn">Animate Months</button>
+      <input type="range" id="slider" min="0" max="1" value="0" style="flex-grow: 1; margin: 0 10px;">
+      <div id="time-display">Ready</div>
+    </div>
+  </div>
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="zone-section">
+      <h4>Retail Territories</h4>
+      <div id="zone-list"></div>
+    </div>
+  </div>
+</div>
+<!-- 2. MODALS -->
+<!-- Filter Configuration Modal (JS Mount Point) -->
+<dialog id="filter-modal">
+  <div class="modal-header">
+    <span>⚙️ Configure Data Query</span>
+    <button onclick="document.getElementById('filter-modal').close()" class="close-btn">×</button>
+  </div>
+  <div style="padding: 20px; background: white;">
+    <div id="picker-mount-point"></div>
+  </div>
+</dialog>
+<!-- Setup Modal -->
+<dialog id="setup-modal" style="border: none; border-radius: 8px; padding: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 90vw; width: 800px;">
+  <div class="modal-header">
+    <span>⚙️ Setup Guide</span>
+    <button onclick="document.getElementById('setup-modal').close()" class="close-btn">×</button>
+  </div>
+  <div id="setup-content" style="padding: 30px; background: white; max-height: 80vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
+      <div style="text-align:center; color:#999;">Loading Setup Guide...</div>
+  </div>
+</dialog>
+<!-- Guide Modal -->
+<dialog id="guide-modal" style="border: none; border-radius: 8px; padding: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 90vw; width: 800px;">
+  <div class="modal-header">
+    <span>📖 User Guide</span>
+    <button onclick="document.getElementById('guide-modal').close()" class="close-btn">×</button>
+  </div>
+  <div id="guide-content" style="padding: 30px; background: white; max-height: 80vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
+      <div style="text-align:center; color:#999;">Loading User Guide...</div>
+  </div>
+</dialog>
+<!-- Architecture Modal -->
+<dialog id="arch-modal" style="border: none; border-radius: 8px; padding: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 90vw; width: 800px;">
+  <div class="modal-header">
+    <span>🏗️ System Architecture</span>
+    <button onclick="document.getElementById('arch-modal').close()" class="close-btn">×</button>
+  </div>
+  <div id="arch-content" style="padding: 30px; background: white; max-height: 80vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
+      <div style="text-align:center; color:#999;">Loading Architecture...</div>
+  </div>
+</dialog>
+<!-- 3. INITIALIZATION & CONTENT LOADING -->
+<div class="observablehq observablehq--block"><!--:21888d86:--></div>
+</main>
+<footer id="observablehq-footer">
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-12T09:30:16">Apr 12, 2026</a>.</div>
+</footer>
+</div>
+</body>
+</html>
