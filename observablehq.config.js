@@ -14,6 +14,14 @@ export default {
   // Sidebar Page Titles
   pages: [
     {
+      name: "Project Overview",
+      path: "/OVERVIEW"
+    },
+    {
+      name: "Pipeline & Reproducibility",
+      path: "/PIPELINE"
+    },
+    {
       name: "Build A Filter", 
       path: "/picker"
     }

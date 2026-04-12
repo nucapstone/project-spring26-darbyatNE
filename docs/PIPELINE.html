@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.13.4">
+<title>Pipeline &amp; Reproducibility | PJM LMP Visualization</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.b050d634.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.b050d634.css">
+<link rel="modulepreload" href="./_observablehq/client.16b578fc.js">
+<link rel="modulepreload" href="./_observablehq/runtime.607a8173.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.277aeab8.js">
+
+        <link rel="icon" href="./_file/img/lmp_icon.7d29060b.png" type="image/png">
+        <meta property="og:image" content="/img/observable.png">
+        
+<script type="module">
+
+import "./_observablehq/client.16b578fc.js";
+
+</script>
+</head>
+<body>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link"><a href="./">PJM LMP Visualization</a></li>
+  </ol>
+  <ol>
+    <li class="observablehq-link"><a href="./OVERVIEW">Project Overview</a></li>
+    <li class="observablehq-link observablehq-link-active"><a href="./PIPELINE">Pipeline &amp; Reproducibility</a></li>
+    <li class="observablehq-link"><a href="./picker">Build A Filter</a></li>
+  </ol>
+</nav>
+<script>{const e=document.querySelector("#observablehq-sidebar"),o=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?o.checked=r==="true":o.indeterminate=!0;for(const t of document.querySelectorAll("#observablehq-sidebar summary")){const s=t.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${t.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<div id="observablehq-center">
+<aside id="observablehq-toc" data-selector="h1:not(:first-of-type)[id], h2:first-child[id], :not(h1) + h2[id]">
+<nav>
+<div>Contents</div>
+<ol>
+<li class="observablehq-secondary-link"><a href="#1-reproducibility-levels">1. Reproducibility levels</a></li>
+<li class="observablehq-secondary-link"><a href="#2-main-pipeline-stages">2. Main pipeline stages</a></li>
+<li class="observablehq-secondary-link"><a href="#3-practical-acquisition-constraints">3. Practical acquisition constraints</a></li>
+<li class="observablehq-secondary-link"><a href="#4-minimum-commands-to-reproduce-the-static-demo">4. Minimum commands to reproduce the static demo</a></li>
+<li class="observablehq-secondary-link"><a href="#5-minimum-commands-to-reproduce-the-full-local-run">5. Minimum commands to reproduce the full local run</a></li>
+<li class="observablehq-secondary-link"><a href="#6-data-products-required-by-the-dashboard">6. Data products required by the dashboard</a></li>
+<li class="observablehq-secondary-link"><a href="#7-snapshot-generation-path">7. Snapshot generation path</a></li>
+<li class="observablehq-secondary-link"><a href="#8-what-is-and-is-not-fully-reproducible-from-public-materials-alone">8. What is and is not fully reproducible from public materials alone</a></li>
+<li class="observablehq-secondary-link"><a href="#9-six-month-rule-notes">9. Six-month-rule notes</a></li>
+</ol>
+</nav>
+</aside>
+<main id="observablehq-main" class="observablehq">
+<h1 id="pipeline-and-reproducibility" tabindex="-1"><a class="observablehq-header-anchor" href="#pipeline-and-reproducibility">Pipeline &amp; Reproducibility</a></h1>
+<p>This document explains how the project data flows from source systems into the dashboard and what is required to reproduce the reported results.</p>
+<h2 id="1-reproducibility-levels" tabindex="-1"><a class="observablehq-header-anchor" href="#1-reproducibility-levels">1. Reproducibility levels</a></h2>
+<p>This repository supports two different reproducibility paths.</p>
+<h3 id="a-static-demo-reproducibility" tabindex="-1"><a class="observablehq-header-anchor" href="#a-static-demo-reproducibility">A. Static demo reproducibility</a></h3>
+<p>This is the path used for GitHub Pages.</p>
+<p>It reproduces:</p>
+<ul>
+<li>the dashboard interface,</li>
+<li>the visual encodings,</li>
+<li>a fixed snapshot of service territories,</li>
+<li>a fixed snapshot of wholesale pricing points,</li>
+<li>and a fixed snapshot of aggregated price data.</li>
+</ul>
+<p>It does <strong>not</strong> require live backend access.</p>
+<h3 id="b-full-local-reproducibility" tabindex="-1"><a class="observablehq-header-anchor" href="#b-full-local-reproducibility">B. Full local reproducibility</a></h3>
+<p>This is the path used when running the full application locally.</p>
+<p>It reproduces:</p>
+<ul>
+<li>the backend-connected dashboard,</li>
+<li>the SSH tunnel workflow,</li>
+<li>the credentialed database access path,</li>
+<li>and the ability to regenerate or refresh the demo snapshot.</li>
+</ul>
+<p>It requires:</p>
+<ul>
+<li>the provided <code>.env</code> file in the repository root,</li>
+<li>a temporary or permanent SSH key,</li>
+<li>the configured Conda environment,</li>
+<li>and access to the backing PostgreSQL database.</li>
+</ul>
+<h2 id="2-main-pipeline-stages" tabindex="-1"><a class="observablehq-header-anchor" href="#2-main-pipeline-stages">2. Main pipeline stages</a></h2>
+<p>The final dashboard depends on the following stages:</p>
+<ol>
+<li>
+<p><strong>Source data acquisition</strong>
+PJM-derived data and supporting geography/reference data are gathered and stored for processing.</p>
+</li>
+<li>
+<p><strong>Hydration and maintenance scripts</strong>
+Scripts in <code>src/hydrate/</code> prepare, clean, match, and monitor the data products used by the dashboard.</p>
+</li>
+<li>
+<p><strong>Database storage</strong>
+Processed service territory, retail, and wholesale tables are stored in PostgreSQL.</p>
+</li>
+<li>
+<p><strong>Backend query layer</strong>
+The FastAPI backend in <code>api/backend.py</code> exposes query endpoints for the frontend.</p>
+</li>
+<li>
+<p><strong>Frontend rendering</strong>
+The Observable frontend queries backend endpoints in local live mode or reads snapshot files in GitHub Pages demo mode.</p>
+</li>
+<li>
+<p><strong>Static snapshot generation</strong>
+<code>scripts/build_demo_snapshot.py</code> exports a reproducible demo snapshot into <code>src/data/demo/</code>.</p>
+</li>
+</ol>
+<h2 id="3-practical-acquisition-constraints" tabindex="-1"><a class="observablehq-header-anchor" href="#3-practical-acquisition-constraints">3. Practical acquisition constraints</a></h2>
+<p>The wholesale-data portion of the pipeline is shaped by several real operational limits:</p>
+<ol>
+<li>
+<p><strong>PJM API rate limits</strong>
+The query workflow is constrained to roughly six requests per minute.</p>
+</li>
+<li>
+<p><strong>Row-count limits on returned data</strong>
+Query results cannot exceed 50,000 rows, which becomes a bottleneck quickly when collecting hourly data across several hundred LMPs over multiple years.</p>
+</li>
+<li>
+<p><strong>Historical-query limitations for older data</strong>
+For data older than roughly two years, the practical workflow is more expensive because filtered retrieval is not sufficient; the pipeline may need to retrieve the full 13,188 available LMP records and then filter locally.</p>
+</li>
+<li>
+<p><strong>Representative-group construction</strong>
+The dashboard does not simply display every raw point directly. A key part of the pipeline is identifying which LMPs appropriately represent each service-territory grouping before aggregating them into territory-level wholesale comparisons.</p>
+</li>
+</ol>
+<p>These constraints are a major reason the project uses stored historical data, hydration scripts, and a snapshot workflow rather than querying the full historical scope on demand from the public site.</p>
+<h2 id="4-minimum-commands-to-reproduce-the-static-demo" tabindex="-1"><a class="observablehq-header-anchor" href="#4-minimum-commands-to-reproduce-the-static-demo">4. Minimum commands to reproduce the static demo</a></h2>
+<p>From the repository root:</p>
+<pre data-language="bash"><code class="language-bash">conda <span class="hljs-built_in">env</span> create -f environment.yml
+conda activate lmp-lite
+npm install
+</code></pre>
+<p>If a local backend session is already available, generate a demo snapshot:</p>
+<pre data-language="bash"><code class="language-bash">python3 scripts/build_demo_snapshot.py --start-year 2020 --end-year 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12
+</code></pre>
+<p>Then build the GitHub Pages output:</p>
+<pre data-language="bash"><code class="language-bash">npm run build:docs
+</code></pre>
+<p>This reproduces the static docs site in <code>docs/</code>.</p>
+<h2 id="5-minimum-commands-to-reproduce-the-full-local-run" tabindex="-1"><a class="observablehq-header-anchor" href="#5-minimum-commands-to-reproduce-the-full-local-run">5. Minimum commands to reproduce the full local run</a></h2>
+<ol>
+<li>Place the provided <code>.env</code> file at the repository root.</li>
+<li>Install the temporary evaluation SSH key:</li>
+</ol>
+<pre data-language="bash"><code class="language-bash">make temp
+</code></pre>
+<ol start="3">
+<li>Start the full stack:</li>
+</ol>
+<pre data-language="bash"><code class="language-bash">make app
+</code></pre>
+<p>This launches:</p>
+<ul>
+<li>the SSH tunnel,</li>
+<li>the FastAPI backend,</li>
+<li>and the Observable frontend.</li>
+</ul>
+<h2 id="6-data-products-required-by-the-dashboard" tabindex="-1"><a class="observablehq-header-anchor" href="#6-data-products-required-by-the-dashboard">6. Data products required by the dashboard</a></h2>
+<p>The main dashboard depends on the following conceptual data products:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Data product</th>
+<th style="text-align:left">Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">Service territory geometries</td>
+<td style="text-align:left">Polygon layer for retail territories</td>
+</tr>
+<tr>
+<td style="text-align:left">Retail monthly rates</td>
+<td style="text-align:left">Territory-level retail comparison values</td>
+</tr>
+<tr>
+<td style="text-align:left">Wholesale monthly prices</td>
+<td style="text-align:left">Territory-linked wholesale comparison values</td>
+</tr>
+<tr>
+<td style="text-align:left">PJM point coordinates</td>
+<td style="text-align:left">Marker locations used on the map</td>
+</tr>
+</tbody>
+</table>
+<p>These are described in more detail in <a href="./ARCHITECTURE">System Architecture</a>.</p>
+<h2 id="7-snapshot-generation-path" tabindex="-1"><a class="observablehq-header-anchor" href="#7-snapshot-generation-path">7. Snapshot generation path</a></h2>
+<p>The static demo snapshot is generated by querying the local backend and writing three files:</p>
+<ul>
+<li><code>src/data/demo/service_territories.geojson</code></li>
+<li><code>src/data/demo/retail_lmps.json</code></li>
+<li><code>src/data/demo/service_territory_price_data.json</code></li>
+</ul>
+<p>Then <code>npm run build:docs</code> copies those files into <code>docs/data/demo/</code> so the GitHub Pages site can load them without a public API.</p>
+<h2 id="8-what-is-and-is-not-fully-reproducible-from-public-materials-alone" tabindex="-1"><a class="observablehq-header-anchor" href="#8-what-is-and-is-not-fully-reproducible-from-public-materials-alone">8. What is and is not fully reproducible from public materials alone</a></h2>
+<h3 id="fully-reproducible-from-the-repository-alone" tabindex="-1"><a class="observablehq-header-anchor" href="#fully-reproducible-from-the-repository-alone">Fully reproducible from the repository alone</a></h3>
+<ul>
+<li>the frontend code,</li>
+<li>the documentation pages,</li>
+<li>the static GitHub Pages demo output,</li>
+<li>and the snapshot-generation procedure.</li>
+</ul>
+<h3 id="requires-private-credentials-or-infrastructure" tabindex="-1"><a class="observablehq-header-anchor" href="#requires-private-credentials-or-infrastructure">Requires private credentials or infrastructure</a></h3>
+<ul>
+<li>direct database access,</li>
+<li>the SSH tunnel endpoint,</li>
+<li>and regeneration of the full live data path from protected infrastructure.</li>
+</ul>
+<p>This limitation should be understood as an infrastructure-access constraint, not as missing code in the repository.</p>
+<h2 id="9-six-month-rule-notes" tabindex="-1"><a class="observablehq-header-anchor" href="#9-six-month-rule-notes">9. Six-month-rule notes</a></h2>
+<p>If you return to this project later, start here:</p>
+<ol>
+<li>Read <a href="./SETUP">Setup / Environment</a>.</li>
+<li>Read <a href="./ARCHITECTURE">System Architecture</a>.</li>
+<li>Verify whether you need static demo reproducibility or full local runtime access.</li>
+<li>Check whether the <code>src/data/demo/</code> snapshot still matches the intended reported results window.</li>
+</ol>
+<p>This document is meant to be the reproducibility bridge between the high-level project overview and the lower-level codebase structure.</p>
+</main>
+<footer id="observablehq-footer">
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-12T14:09:03">Apr 12, 2026</a>.</div>
+</footer>
+</div>
+</body>
+</html>

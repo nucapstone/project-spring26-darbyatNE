@@ -116,20 +116,49 @@ For full local app functionality after cloning, provide users with temporary `.e
 
 ## Documentation
 
-### 1. [User Guide & Domain Logic](src/USER_GUIDE.md) 👈 *Start Here for Context*
+The most useful reading order is:
+
+1. [Project Overview & Findings](src/OVERVIEW.md)
+2. [Pipeline & Reproducibility](src/PIPELINE.md)
+3. [User Guide & Domain Logic](src/USER_GUIDE.md)
+4. [Technical Setup & Data Ingestion](src/SETUP.md)
+5. [Architecture Overview](src/ARCHITECTURE.md)
+
+### 1. [Project Overview & Findings](src/OVERVIEW.md) 👈 *Start Here for General Context*
+*   **Front-facing summary:** What the project does, what is in the repository, and what the main results mean.
+*   **Major findings:** The main comparison takeaways the dashboard is designed to make visible.
+*   **Challenges:** The main practical constraints that shaped the final implementation.
+
+### 2. [Pipeline & Reproducibility](src/PIPELINE.md) 👈 *Start Here for Reproducing Results*
+*   **Pipeline stages:** How source data moves into scripts, the database, the backend, and the frontend.
+*   **Reproducibility paths:** Static demo reproducibility versus full local runtime reproducibility.
+*   **Snapshot generation:** How the GitHub Pages sample dataset is created and published.
+
+### 3. [User Guide & Domain Logic](src/USER_GUIDE.md) 👈 *Start Here for Interface Context*
 *   **Key Terms:** What are PJM, LMP, retail rates, and price spreads?
 *   **How to Use the Tool:** Navigating the interface and interpreting visualizations.
 *   **Workflow:** Steps to compare historical wholesale and retail prices.
 
-### 2. [Technical Setup & Data Ingestion](src/SETUP.md) 👈 *Start Here for Building the Infrastructure*
+### 4. [Technical Setup & Data Ingestion](src/SETUP.md) 👈 *Start Here for Building the Infrastructure*
 *   **Environment Preparation:** Building the Conda and npm environment required by `make app`.
 *   **Backend Connectivity:** Setting up `.env` keys and SSH tunnel assumptions.
 *   **Infrastructure Notes:** Understanding what is required beyond basic app startup.
 
-### 3. [Architecture Overview](src/ARCHITECTURE.md)
+### 5. [Architecture Overview](src/ARCHITECTURE.md)
 *   **Runtime Flow:** How the frontend, backend, Makefile, and database interact.
 *   **Project Layout:** Where the main application components live.
 *   **Current Boundaries:** What is fully documented versus still evolving.
+
+## Attribution
+
+This project depends on a combination of public data, mapping tools, and open-source libraries.
+
+- **PJM-derived market data** provides the wholesale market context used throughout the dashboard.
+- **OpenStreetMap contributors** are an underlying source for some geographic reference materials used during data preparation workflows.
+- **MapTiler** provides the basemap style used by the interactive map.
+- **Observable Framework**, **FastAPI**, **SQLAlchemy**, **D3**, and **MapLibre GL** provide the main application and visualization infrastructure.
+
+Additional stakeholder, advisor, or course-specific acknowledgements should be added here before final submission if required by the project agreement.
 
 ---
 
