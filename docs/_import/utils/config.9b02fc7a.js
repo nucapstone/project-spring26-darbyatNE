@@ -1,9 +1,25 @@
 // src/utils/config.js
 
-const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+const hostname = window.location.hostname;
+const searchParams = new URLSearchParams(window.location.search);
+const isLocal = hostname === "localhost" || hostname === "127.0.0.1";
+const isGitHubPages = hostname.endsWith("github.io");
 
-// export const API_BASE_URL = "https://obvolutive-secondarily-lainey.ngrok-free.dev";
-export const API_BASE_URL = "http://localhost:8000";
+// Runtime toggles:
+// - On GitHub Pages, default to static demo mode.
+// - Use ?live=1 to force live API mode.
+// - Use ?demo=1 to force static demo mode.
+const forceLive = searchParams.get("live") === "1";
+const forceDemo = searchParams.get("demo") === "1";
+
+export const STATIC_DEMO_MODE = forceDemo || (isGitHubPages && !forceLive);
+export const API_BASE_URL = isLocal ? "http://localhost:8000" : "";
+
+export const DEMO_DATA_PATHS = {
+    territories: "data/demo/service_territories.geojson",
+    retailLmps: "data/demo/retail_lmps.json",
+    priceData: "data/demo/service_territory_price_data.json"
+};
 
 // --- NEW SCALES ---
 

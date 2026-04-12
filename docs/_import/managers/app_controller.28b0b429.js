@@ -1,7 +1,20 @@
 import maplibregl from "../../_npm/maplibre-gl@5.15.0/4c3c9e9c.js";
 // 1. Import the new scales from config
-import { API_BASE_URL, RETAIL_COLOR_SCALE, WHOLESALE_COLOR_SCALE } from "../utils/config.d6642fe5.js";
+import { API_BASE_URL, RETAIL_COLOR_SCALE, WHOLESALE_COLOR_SCALE, STATIC_DEMO_MODE, DEMO_DATA_PATHS } from "../utils/config.9b02fc7a.js";
 import { displayCurrentFilter, buildLegend } from "../components/ui.1db8755a.js";
+
+function normalizeSnapshotMonths(monthValue) {
+    if (!monthValue) return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+    const list = Array.isArray(monthValue)
+        ? monthValue
+        : String(monthValue).split(',').map(v => Number(v.trim()));
+
+    // Snapshot payload is month numbers 1-12. UI state uses 0-11.
+    return list
+        .filter(v => Number.isFinite(v) && v >= 1 && v <= 12)
+        .map(v => v - 1);
+}
 
 export class MapController {
     constructor(map, uiElements = {}) {
@@ -66,6 +79,54 @@ export class MapController {
 
     async loadData(filter) {
         this.currentFilter = filter;
+
+        if (STATIC_DEMO_MODE) {
+            try {
+                const response = await fetch(DEMO_DATA_PATHS.priceData);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const snapshot = await response.json();
+                this.zoneData = Array.isArray(snapshot.data) ? snapshot.data : [];
+
+                const effectiveFilter = {
+                    startYear: snapshot.params?.startYear ?? filter.startYear,
+                    endYear: snapshot.params?.endYear ?? filter.endYear,
+                    months: normalizeSnapshotMonths(snapshot.params?.months)
+                };
+
+                this.currentFilter = effectiveFilter;
+                if (typeof displayCurrentFilter === 'function') {
+                    displayCurrentFilter(effectiveFilter);
+                }
+
+                this.buildMonthlyFrames();
+                this.updateDynamicColorScales();
+                if (window.zonePlotManager) {
+                    window.zonePlotManager.updateFilter(effectiveFilter);
+                    window.zonePlotManager.updateData(this.monthlyFrames);
+                }
+                this.calculateZonePrices();
+                this.configureTimeControls();
+                this.renderAverageView();
+            } catch (error) {
+                console.error("Error loading static demo snapshot:", error);
+                if (typeof displayCurrentFilter === 'function') {
+                    displayCurrentFilter(filter, "Demo snapshot unavailable");
+                }
+                this.zoneData = [];
+                this.monthlyFrames = [];
+                this.retailColorScale = [...RETAIL_COLOR_SCALE];
+                this.wholesaleColorScale = [...WHOLESALE_COLOR_SCALE];
+                if (window.zonePlotManager) {
+                    window.zonePlotManager.updateData([]);
+                }
+                this.configureTimeControls();
+                this.renderData();
+            }
+            return;
+        }
         
         if (!filter.startYear || !filter.endYear) {
             console.warn("MapController: Missing years in filter, skipping API load.");

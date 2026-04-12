@@ -11,14 +11,25 @@ import argparse
 import json
 import os
 from pathlib import Path
+from urllib.error import URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
 
 def fetch_json(url: str):
-    with urlopen(url) as response:  # nosec B310 - user-controlled host is intentional for local snapshot tooling
-        payload = response.read().decode("utf-8")
-    return json.loads(payload)
+    try:
+        with urlopen(url) as response:  # nosec B310 - user-controlled host is intentional for local snapshot tooling
+            payload = response.read().decode("utf-8")
+        return json.loads(payload)
+    except URLError as exc:
+        raise RuntimeError(
+            "Could not reach the local backend at "
+            f"{url}. Start the app/backend first, then rerun the snapshot build.\n\n"
+            "Typical flow:\n"
+            "  1. make app\n"
+            "  2. Wait for the backend to start on http://127.0.0.1:8000\n"
+            "  3. Run python3 scripts/build_demo_snapshot.py --start-year 2020 --end-year 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12\n"
+        ) from exc
 
 
 def write_json(path: Path, payload):

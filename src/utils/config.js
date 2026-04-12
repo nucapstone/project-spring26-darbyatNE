@@ -16,9 +16,9 @@ export const STATIC_DEMO_MODE = forceDemo || (isGitHubPages && !forceLive);
 export const API_BASE_URL = isLocal ? "http://localhost:8000" : "";
 
 export const DEMO_DATA_PATHS = {
-    territories: "/data/demo/service_territories.geojson",
-    retailLmps: "/data/demo/retail_lmps.json",
-    priceData: "/data/demo/service_territory_price_data.json"
+    territories: "data/demo/service_territories.geojson",
+    retailLmps: "data/demo/retail_lmps.json",
+    priceData: "data/demo/service_territory_price_data.json"
 };
 
 // --- NEW SCALES ---
