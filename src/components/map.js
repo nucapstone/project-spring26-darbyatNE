@@ -7,8 +7,16 @@ import { zonePlotManager } from "./zone_plot.js";
 import { dateTimeRangePicker } from "./picker.js"; 
 
 // 1. Removed ZONE_LABEL_OVERRIDES from the import
-import { API_BASE_URL, NET_COLOR_SCALE } from "../utils/config.js";
+import { API_BASE_URL, NET_COLOR_SCALE, STATIC_DEMO_MODE, DEMO_DATA_PATHS } from "../utils/config.js";
 import { MapController } from "../managers/app_controller.js";
+
+async function fetchJson(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status} for ${url}`);
+    }
+    return response.json();
+}
 
 export function initApp() {
     // 1. Initialize Map
@@ -40,9 +48,10 @@ export function initApp() {
     // 3. Map Load Logic
     map.on('load', async () => {
         try {
-            // Fetch service territories
-            const shapesResponse = await fetch(`${API_BASE_URL}/api/service-terr`);
-            const shapes = await shapesResponse.json();
+            // Fetch service territories from live API or static demo snapshot.
+            const shapes = STATIC_DEMO_MODE
+                ? await fetchJson(DEMO_DATA_PATHS.territories)
+                : await fetchJson(`${API_BASE_URL}/api/service-terr`);
 
             window.pjmGeoJsonData = shapes;
             if (controller.contourLayer) {
@@ -165,21 +174,16 @@ export function initApp() {
             });
             
             // --- Fetch LMP Data for Retail Territories ---
-            const lmpResponse = await fetch(`${API_BASE_URL}/api/retail_lmps`).catch(error => {
-                console.error("Network error fetching LMP data:", error);
-                return null;
-            });
-
             let lmpData = [];
-            if (lmpResponse && lmpResponse.ok) {
-                try {
-                    const responseData = await lmpResponse.json();
-                    if (responseData && Array.isArray(responseData.data)) {
-                        lmpData = responseData.data;
-                    }
-                } catch (error) {
-                    console.error("Error parsing LMP data JSON:", error);
+            try {
+                const lmpPayload = STATIC_DEMO_MODE
+                    ? await fetchJson(DEMO_DATA_PATHS.retailLmps)
+                    : await fetchJson(`${API_BASE_URL}/api/retail_lmps`);
+                if (lmpPayload && Array.isArray(lmpPayload.data)) {
+                    lmpData = lmpPayload.data;
                 }
+            } catch (error) {
+                console.error("Error fetching LMP data:", error);
             }
 
             const lmpFeatures = lmpData.map((lmp) => {
@@ -594,7 +598,14 @@ export function initApp() {
     const modal = document.getElementById('filter-modal');
     const mountPoint = document.getElementById('picker-mount-point');
 
-    if (filterBtn && modal && mountPoint) {
+    if (STATIC_DEMO_MODE && filterBtn) {
+        filterBtn.style.cursor = 'not-allowed';
+        filterBtn.style.opacity = '0.75';
+        filterBtn.title = 'Demo snapshot mode uses a fixed date range.';
+        filterBtn.onclick = () => {};
+    }
+
+    if (!STATIC_DEMO_MODE && filterBtn && modal && mountPoint) {
         filterBtn.onclick = async () => {
             mountPoint.innerHTML = ''; 
 

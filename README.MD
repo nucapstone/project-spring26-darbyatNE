@@ -62,6 +62,26 @@ make app
 
 This repository is configured to publish the static frontend from `docs/`.
 
+> **Note for GitHub Pages visitors:** The data shown on the hosted site is a static demo/sample snapshot.
+> To access the full live workflow and backend-connected data retrieval, you must clone the repository and use the provided temporary `.env` credentials and SSH key.
+
+### Static demo data mode (no public API)
+
+The GitHub Pages build uses static snapshot files from `src/data/demo/`.
+This lets users explore the app without backend credentials and without changing the backend query window.
+
+To refresh the demo snapshot from a local backend session:
+
+```bash
+npm run build:demo-data
+```
+
+Optional custom window:
+
+```bash
+python3 scripts/build_demo_snapshot.py --start-year 2025 --end-year 2025 --months 1,2,3,4,5,6
+```
+
 ### 1. Build the Pages output into `docs/`
 
 ```bash
@@ -73,7 +93,7 @@ This command builds the Observable site into `docs/` and writes `docs/.nojekyll`
 ### 2. Commit and push
 
 ```bash
-git add docs package.json
+git add docs src/data/demo package.json observablehq.config.js
 git commit -m "Build docs site for GitHub Pages"
 git push origin main
 ```
@@ -91,7 +111,8 @@ After that, GitHub Pages serves the dashboard from the contents of `docs/`.
 
 ### Backend note for public clones
 
-The GitHub Pages site is frontend-only. For full local app functionality after cloning, provide users with temporary `.env` credentials and a temporary SSH key, then follow the setup steps in this README (`make temp` + `.env` in repo root + `make app`).
+The GitHub Pages site runs in static demo mode by default.
+For full local app functionality after cloning, provide users with temporary `.env` credentials and a temporary SSH key, then follow the setup steps in this README (`make temp` + `.env` in repo root + `make app`).
 
 ## Documentation
 
