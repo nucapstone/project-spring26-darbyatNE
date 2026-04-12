@@ -47,9 +47,9 @@ pager: false
       </button>
       <!-- Dropdown Menu -->
       <div id="header-help-menu" class="header-dropdown right-aligned" style="min-width: 175px;">
-          <a href="#" id="btn-guide">📖 User Guide</a>
-        <a href="#" id="btn-setup">⚙️ Setup / Environment</a>
-          <a href="#" id="btn-arch">🏗️ System Architecture</a>
+          <a href="./USER_GUIDE" id="btn-guide">📖 User Guide</a>
+        <a href="./SETUP" id="btn-setup">⚙️ Setup / Environment</a>
+          <a href="./ARCHITECTURE" id="btn-arch">🏗️ System Architecture</a>
       </div>
     </div>
   </div>
