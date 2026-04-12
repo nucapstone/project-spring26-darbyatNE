@@ -1,6 +1,6 @@
 import maplibregl from "../../_npm/maplibre-gl@5.15.0/4c3c9e9c.js";
 // 1. Import the new scales from config
-import { API_BASE_URL, RETAIL_COLOR_SCALE, WHOLESALE_COLOR_SCALE, STATIC_DEMO_MODE, DEMO_DATA_PATHS } from "../utils/config.9b02fc7a.js";
+import { API_BASE_URL, RETAIL_COLOR_SCALE, WHOLESALE_COLOR_SCALE, STATIC_DEMO_MODE, DEMO_DATA_PATHS } from "../utils/config.0d95a1cf.js";
 import { displayCurrentFilter, buildLegend } from "../components/ui.1db8755a.js";
 
 function normalizeSnapshotMonths(monthValue) {

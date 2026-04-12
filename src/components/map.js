@@ -7,7 +7,7 @@ import { zonePlotManager } from "./zone_plot.js";
 import { dateTimeRangePicker } from "./picker.js"; 
 
 // 1. Removed ZONE_LABEL_OVERRIDES from the import
-import { API_BASE_URL, NET_COLOR_SCALE, STATIC_DEMO_MODE, DEMO_DATA_PATHS } from "../utils/config.js";
+import { API_BASE_URL, NET_COLOR_SCALE, STATIC_DEMO_MODE, DEMO_DATA_PATHS, IS_GITHUB_PAGES } from "../utils/config.js";
 import { MapController } from "../managers/app_controller.js";
 
 async function fetchJson(url) {
@@ -598,11 +598,39 @@ export function initApp() {
     const modal = document.getElementById('filter-modal');
     const mountPoint = document.getElementById('picker-mount-point');
 
-    if (STATIC_DEMO_MODE && filterBtn) {
+    if (STATIC_DEMO_MODE && IS_GITHUB_PAGES && filterBtn) {
+        const demoAccessMessage = 'Clone the repo and request credentials for full access.';
+        let restoreMessageTimer = null;
+
+        const restoreCurrentFilterDisplay = () => {
+            if (restoreMessageTimer) {
+                clearTimeout(restoreMessageTimer);
+                restoreMessageTimer = null;
+            }
+            displayCurrentFilter(controller.currentFilter || filter);
+        };
+
+        const showDemoAccessMessage = () => {
+            if (restoreMessageTimer) {
+                clearTimeout(restoreMessageTimer);
+            }
+            displayCurrentFilter(controller.currentFilter || filter, demoAccessMessage);
+            restoreMessageTimer = setTimeout(() => {
+                restoreCurrentFilterDisplay();
+            }, 2500);
+        };
+
         filterBtn.style.cursor = 'not-allowed';
         filterBtn.style.opacity = '0.75';
-        filterBtn.title = 'Demo snapshot mode uses a fixed date range.';
-        filterBtn.onclick = () => {};
+        filterBtn.title = demoAccessMessage;
+        filterBtn.setAttribute('aria-label', demoAccessMessage);
+        filterBtn.onmouseenter = () => {
+            filterBtn.title = demoAccessMessage;
+        };
+        filterBtn.onclick = (event) => {
+            event.preventDefault();
+            showDemoAccessMessage();
+        };
     }
 
     if (!STATIC_DEMO_MODE && filterBtn && modal && mountPoint) {

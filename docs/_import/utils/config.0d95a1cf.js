@@ -5,6 +5,8 @@ const searchParams = new URLSearchParams(window.location.search);
 const isLocal = hostname === "localhost" || hostname === "127.0.0.1";
 const isGitHubPages = hostname.endsWith("github.io");
 
+export const IS_GITHUB_PAGES = isGitHubPages;
+
 // Runtime toggles:
 // - On GitHub Pages, default to static demo mode.
 // - Use ?live=1 to force live API mode.
