@@ -88,6 +88,13 @@ export function buildLegend(retailScale, wholesaleScale, title = "Price ($/MWh)"
     const isMinimized = false;
     legendContainer.dataset.minimized = 'false';
 
+    const subtitleRow = (options.locational && options.zoneColorMap)
+        ? `<div style="margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 6px; font-size: 12px; color: #000; font-weight: 700; text-align: center;">Retail Servcie Trerritories</div>`
+        : `<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px; font-size: 10px; color: #000;">
+                    <span style="font-weight: bold; color: #000; text-align: right;">Retail (Territory Shapes)<br><span style="font-weight: normal;">(¢/kWhr)</span></span>
+                    <span style="font-weight: bold; color: #000; text-align: left;">Wholesale (LMP Points)<br><span style="font-weight: normal;">(¢/kWhr)</span></span>
+                </div>`;
+
     let html = `
         <div style="background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-family: sans-serif; font-size: 12px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
@@ -95,10 +102,7 @@ export function buildLegend(retailScale, wholesaleScale, title = "Price ($/MWh)"
                 <button id="legend-minimize-btn" style="border: 1px solid #bbb; border-radius: 3px; background: #fff; color: #333; font-size: 12px; width: 20px; height: 20px; line-height: 16px; padding: 0; cursor: pointer;" aria-expanded="${!isMinimized}" title="${isMinimized ? 'Expand legend' : 'Minimize legend'}">${isMinimized ? '+' : '-'}</button>
             </div>
             <div id="legend-content" style="display: ${isMinimized ? 'none' : 'block'}; max-height: 300px; overflow-y: auto; overflow-x: hidden;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px; font-size: 10px; color: #000;">
-                    <span style="font-weight: bold; color: #000; text-align: right;">Retail (Territory Shapes)<br><span style="font-weight: normal;">(¢/kWhr)</span></span>
-                    <span style="font-weight: bold; color: #000; text-align: left;">Wholesale (LMP Points)<br><span style="font-weight: normal;">(¢/kWhr)</span></span>
-                </div>
+                ${subtitleRow}
     `;
 
     if (options.locational && options.zoneColorMap) {
