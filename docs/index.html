@@ -69,11 +69,10 @@
 import {define} from "./_observablehq/client.16b578fc.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./ARCHITECTURE.md", {"name":"./ARCHITECTURE.md","mimeType":"text/markdown","path":"./_file/ARCHITECTURE.f79d5529.md","lastModified":1775939990413,"size":8435});
-registerFile("./SETUP.md", {"name":"./SETUP.md","mimeType":"text/markdown","path":"./_file/SETUP.d0beb422.md","lastModified":1775939990413,"size":4991});
-registerFile("./USER_GUIDE.md", {"name":"./USER_GUIDE.md","mimeType":"text/markdown","path":"./_file/USER_GUIDE.8fab41c6.md","lastModified":1775844119170,"size":7436});
+registerFile("./SETUP.md", {"name":"./SETUP.md","mimeType":"text/markdown","path":"./_file/SETUP.22db02d7.md","lastModified":1776085206981,"size":3454});
+registerFile("./USER_GUIDE.md", {"name":"./USER_GUIDE.md","mimeType":"text/markdown","path":"./_file/USER_GUIDE.46474a80.md","lastModified":1776085214853,"size":7350});
 
-define({id: "21888d86", inputs: ["FileAttachment"], outputs: ["marked","initApp","initInfoModals","displayCurrentFilter","filter","saveFilter","dateTimeRangePicker","picker","mountPoint","lockTopControlBoxSize","cleanMarkdown","btnGuide","btnSetup","btnArch"], body: async (FileAttachment) => {
+define({id: "b1c6a5c8", inputs: ["FileAttachment"], outputs: ["marked","initApp","initInfoModals","displayCurrentFilter","filter","saveFilter","dateTimeRangePicker","picker","mountPoint","lockTopControlBoxSize","cleanMarkdown","btnGuide","btnSetup"], body: async (FileAttachment) => {
 const [{marked}, {initApp}, {initInfoModals, displayCurrentFilter}, {filter, saveFilter}, {dateTimeRangePicker}] = await Promise.all([import("./_npm/marked@17.0.1/b499876a.js"), import("./_import/components/map.7a7671be.js"), import("./_import/components/ui.1db8755a.js"), import("./_import/components/filter.9314faac.js"), import("./_import/components/picker.0a54784a.js")]);
  
 
@@ -196,10 +195,9 @@ function cleanMarkdown(text) {
 
 (async () => {
   try {
-    const [setupText, guideText, archText] = await Promise.all([
+    const [setupText, guideText] = await Promise.all([
       FileAttachment("./SETUP.md").text(),
-      FileAttachment("./USER_GUIDE.md").text(),
-      FileAttachment("./ARCHITECTURE.md").text()
+      FileAttachment("./USER_GUIDE.md").text()
     ]);
 
     const setupEl = document.getElementById('setup-content');
@@ -207,9 +205,6 @@ function cleanMarkdown(text) {
 
     const guideEl = document.getElementById('guide-content');
     if (guideEl) guideEl.innerHTML = marked.parse(cleanMarkdown(guideText));
-
-    const archEl = document.getElementById('arch-content');
-    if (archEl) archEl.innerHTML = marked.parse(cleanMarkdown(archText));
     
   } catch (err) {
     console.error("Error loading docs:", err);
@@ -238,17 +233,6 @@ if (btnSetup) {
   });
 }
 
-const btnArch = document.getElementById('btn-arch');
-if (btnArch) {
-  btnArch.addEventListener('click', (e) => {
-    e.preventDefault();
-    const modal = document.getElementById('arch-modal');
-    if (modal) modal.showModal();
-    const menu = document.getElementById('header-help-menu');
-    if (menu) menu.style.display = 'none';
-  });
-}
-
 // Initialize Map App
 initApp();
 
@@ -259,7 +243,7 @@ document.addEventListener('click', function(event) {
     menu.style.display = 'none';
   }
 });
-return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dateTimeRangePicker,picker,mountPoint,lockTopControlBoxSize,cleanMarkdown,btnGuide,btnSetup,btnArch};
+return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dateTimeRangePicker,picker,mountPoint,lockTopControlBoxSize,cleanMarkdown,btnGuide,btnSetup};
 }});
 
 </script>
@@ -305,10 +289,8 @@ return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dat
       <!-- Dropdown Menu -->
       <div id="header-help-menu" class="header-dropdown right-aligned" style="min-width: 210px;">
           <a href="./OVERVIEW">🧭 Project Overview</a>
-          <a href="./PIPELINE">🧪 Pipeline / Reproducibility</a>
           <a href="./USER_GUIDE" id="btn-guide">📖 User Guide</a>
         <a href="./SETUP" id="btn-setup">⚙️ Setup / Environment</a>
-          <a href="./ARCHITECTURE" id="btn-arch">🏗️ System Architecture</a>
       </div>
     </div>
   </div>
@@ -407,21 +389,11 @@ return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dat
       <div style="text-align:center; color:#999;">Loading User Guide...</div>
   </div>
 </dialog>
-<!-- Architecture Modal -->
-<dialog id="arch-modal" style="border: none; border-radius: 8px; padding: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 90vw; width: 800px;">
-  <div class="modal-header">
-    <span>🏗️ System Architecture</span>
-    <button onclick="document.getElementById('arch-modal').close()" class="close-btn">×</button>
-  </div>
-  <div id="arch-content" style="padding: 30px; background: white; max-height: 80vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
-      <div style="text-align:center; color:#999;">Loading Architecture...</div>
-  </div>
-</dialog>
 <!-- 3. INITIALIZATION & CONTENT LOADING -->
-<div class="observablehq observablehq--block"><!--:21888d86:--></div>
+<div class="observablehq observablehq--block"><!--:b1c6a5c8:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-12T14:09:03">Apr 12, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T09:11:52">Apr 13, 2026</a>.</div>
 </footer>
 </div>
 </body>

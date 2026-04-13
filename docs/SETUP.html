@@ -33,7 +33,8 @@ import "./_observablehq/client.16b578fc.js";
   </ol>
   <ol>
     <li class="observablehq-link"><a href="./OVERVIEW">Project Overview</a></li>
-    <li class="observablehq-link"><a href="./PIPELINE">Pipeline &amp; Reproducibility</a></li>
+    <li class="observablehq-link observablehq-link-active"><a href="./SETUP">Setup / Environment</a></li>
+    <li class="observablehq-link"><a href="./USER_GUIDE">User Guide</a></li>
     <li class="observablehq-link"><a href="./picker">Build A Filter</a></li>
   </ol>
 </nav>
@@ -43,34 +44,34 @@ import "./_observablehq/client.16b578fc.js";
 <nav>
 <div>Contents</div>
 <ol>
-<li class="observablehq-secondary-link"><a href="#1-prerequisites">1. Prerequisites</a></li>
-<li class="observablehq-secondary-link"><a href="#2-clone-or-update-the-repository">2. Clone or update the repository</a></li>
-<li class="observablehq-secondary-link"><a href="#3-create-the-conda-environment">3. Create the Conda environment</a></li>
-<li class="observablehq-secondary-link"><a href="#4-install-frontend-dependencies">4. Install frontend dependencies</a></li>
-<li class="observablehq-secondary-link"><a href="#5-place-the-env-file-in-the-correct-location">5. Place the .env file in the correct location</a></li>
-<li class="observablehq-secondary-link"><a href="#6-install-the-ssh-key-used-by-the-root-makefile">6. Install the SSH key used by the root makefile</a></li>
-<li class="observablehq-secondary-link"><a href="#7-run-the-application">7. Run the application</a></li>
-<li class="observablehq-secondary-link"><a href="#8-stop-the-tunnel-app-session">8. Stop the tunnel / app session</a></li>
-<li class="observablehq-secondary-link"><a href="#9-useful-validation-commands">9. Useful validation commands</a></li>
-<li class="observablehq-secondary-link"><a href="#10-troubleshooting">10. Troubleshooting</a></li>
-<li class="observablehq-secondary-link"><a href="#11-scope-of-this-setup">11. Scope of this setup</a></li>
+<li class="observablehq-secondary-link"><a href="#1-access-requirements">1. Access requirements</a></li>
+<li class="observablehq-secondary-link"><a href="#2-prerequisites">2. Prerequisites</a></li>
+<li class="observablehq-secondary-link"><a href="#3-environment-setup">3. Environment setup</a></li>
+<li class="observablehq-secondary-link"><a href="#4-credentials-and-key-placement">4. Credentials and key placement</a></li>
+<li class="observablehq-secondary-link"><a href="#5-full-local-run">5. Full local run</a></li>
+<li class="observablehq-secondary-link"><a href="#6-reproducibility-paths">6. Reproducibility paths</a></li>
+<li class="observablehq-secondary-link"><a href="#7-runtime-architecture-and-data-flow">7. Runtime architecture and data flow</a></li>
+<li class="observablehq-secondary-link"><a href="#8-common-issues">8. Common issues</a></li>
 </ol>
 </nav>
 </aside>
 <main id="observablehq-main" class="observablehq">
-<h1 id="setup-for-the-completed-project" tabindex="-1"><a class="observablehq-header-anchor" href="#setup-for-the-completed-project">Setup for the Completed Project</a></h1>
-<p>This is the final setup guide for running the dashboard locally.</p>
-<p>The shortest reliable path is:</p>
-<ol>
-<li>pull the latest repository changes,</li>
-<li>create or update the Conda environment,</li>
-<li>install the frontend dependencies,</li>
-<li>place the required <code>.env</code> file in the repository root,</li>
-<li>install the SSH key used by the root <code>makefile</code>,</li>
-<li>run <code>make app</code> from the project root.</li>
-</ol>
-<h2 id="1-prerequisites" tabindex="-1"><a class="observablehq-header-anchor" href="#1-prerequisites">1. Prerequisites</a></h2>
-<p>Before startup, make sure the following are available:</p>
+<h1 id="setup-runtime-and-reproducibility" tabindex="-1"><a class="observablehq-header-anchor" href="#setup-runtime-and-reproducibility">Setup, Runtime, and Reproducibility</a></h1>
+<p>This document is the single technical reference for:</p>
+<ul>
+<li>environment setup,</li>
+<li>local full-stack startup,</li>
+<li>reproducibility workflow,</li>
+<li>and the runtime data flow.</li>
+</ul>
+<h2 id="1-access-requirements" tabindex="-1"><a class="observablehq-header-anchor" href="#1-access-requirements">1. Access requirements</a></h2>
+<p>For full local functionality, request both from the repository owner:</p>
+<ul>
+<li>the <code>.env</code> file,</li>
+<li>and a private SSH key (temporary evaluation key or approved permanent key).</li>
+</ul>
+<p>Without those credentials, use the GitHub Pages static demo only.</p>
+<h2 id="2-prerequisites" tabindex="-1"><a class="observablehq-header-anchor" href="#2-prerequisites">2. Prerequisites</a></h2>
 <table>
 <thead>
 <tr>
@@ -80,145 +81,125 @@ import "./_observablehq/client.16b578fc.js";
 </thead>
 <tbody>
 <tr>
-<td style="text-align:left"><strong>Git</strong></td>
-<td style="text-align:left">Clone or update the repository</td>
+<td style="text-align:left">Git</td>
+<td style="text-align:left">Clone and update the repository</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>Conda / Miniconda</strong></td>
+<td style="text-align:left">Conda / Miniconda</td>
 <td style="text-align:left">Provides the <code>lmp-lite</code> Python environment</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>Node.js 18+</strong> and <strong>npm</strong></td>
-<td style="text-align:left">Runs the Observable frontend and npm scripts</td>
+<td style="text-align:left">Node.js 18+ and npm</td>
+<td style="text-align:left">Runs frontend and npm scripts</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>OpenSSH</strong></td>
-<td style="text-align:left">Creates the SSH tunnel used by the app</td>
+<td style="text-align:left">OpenSSH</td>
+<td style="text-align:left">Creates the database tunnel</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong><code>lsof</code></strong></td>
-<td style="text-align:left">Lets the <code>makefile</code> check and free local ports</td>
+<td style="text-align:left">lsof</td>
+<td style="text-align:left">Used by <code>makefile</code> port checks</td>
 </tr>
 </tbody>
 </table>
-<h2 id="2-clone-or-update-the-repository" tabindex="-1"><a class="observablehq-header-anchor" href="#2-clone-or-update-the-repository">2. Clone or update the repository</a></h2>
-<p>If you do not have the project yet:</p>
-<pre data-language="bash"><code class="language-bash">git <span class="hljs-built_in">clone</span> https://github.com/nucapstone/project-spring26-darbyatNE.git
-<span class="hljs-built_in">cd</span> project-spring26-darbyatNE
-</code></pre>
-<p>If you already have a local copy, update it first:</p>
-<pre data-language="bash"><code class="language-bash">git pull
-</code></pre>
-<h2 id="3-create-the-conda-environment" tabindex="-1"><a class="observablehq-header-anchor" href="#3-create-the-conda-environment">3. Create the Conda environment</a></h2>
-<p>From the repository root:</p>
+<h2 id="3-environment-setup" tabindex="-1"><a class="observablehq-header-anchor" href="#3-environment-setup">3. Environment setup</a></h2>
+<p>From repository root:</p>
 <pre data-language="bash"><code class="language-bash">conda <span class="hljs-built_in">env</span> create -f environment.yml
 conda activate lmp-lite
+npm install
 </code></pre>
-<p>If the environment already exists and you want to refresh it to match the final dependency file:</p>
+<p>Refresh an existing environment when needed:</p>
 <pre data-language="bash"><code class="language-bash">conda <span class="hljs-built_in">env</span> update -f environment.yml --prune
 conda activate lmp-lite
 </code></pre>
-<h2 id="4-install-frontend-dependencies" tabindex="-1"><a class="observablehq-header-anchor" href="#4-install-frontend-dependencies">4. Install frontend dependencies</a></h2>
-<p>The frontend and backend startup scripts are defined in the root <code>package.json</code>.</p>
-<pre data-language="bash"><code class="language-bash">npm install
+<h2 id="4-credentials-and-key-placement" tabindex="-1"><a class="observablehq-header-anchor" href="#4-credentials-and-key-placement">4. Credentials and key placement</a></h2>
+<ol>
+<li>Place <code>.env</code> in repository root.</li>
+<li>Install the provided SSH key:</li>
+</ol>
+<pre data-language="bash"><code class="language-bash">make temp
 </code></pre>
-<h2 id="5-place-the-env-file-in-the-correct-location" tabindex="-1"><a class="observablehq-header-anchor" href="#5-place-the-env-file-in-the-correct-location">5. Place the <code>.env</code> file in the correct location</a></h2>
-<p>For this project, the <code>.env</code> file should live in:</p>
-<pre data-language="text"><code class="language-text">.env
-</code></pre>
-<p>Use the credentials you were provided privately. At minimum, the backend expects:</p>
-<pre data-language="ini"><code class="language-ini"><span class="hljs-attr">DB_USER</span>=your_database_user
-<span class="hljs-attr">DB_PASSWORD</span>=your_database_password
+<p>Paste the private key and finish with <code>Ctrl-D</code>.</p>
+<p>Expected backend variables in <code>.env</code> include:</p>
+<pre data-language="ini"><code class="language-ini"><span class="hljs-attr">DB_USER</span>=...
+<span class="hljs-attr">DB_PASSWORD</span>=...
 <span class="hljs-attr">DB_HOST</span>=<span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>
 <span class="hljs-attr">DB_PORT</span>=<span class="hljs-number">5433</span>
-<span class="hljs-attr">DB_NAME</span>=your_database_name
+<span class="hljs-attr">DB_NAME</span>=...
 </code></pre>
-<h3 id="why-the-repository-root-env" tabindex="-1"><a class="observablehq-header-anchor" href="#why-the-repository-root-env">Why the repository-root <code>.env</code>?</a></h3>
-<p>The backend is now started from the repository root through <code>npm run dev</code>, so keeping <code>.env</code> at the root is the most reliable way for <code>load_dotenv()</code> in <code>api/backend.py</code> to load it consistently.</p>
-<h2 id="6-install-the-ssh-key-used-by-the-root-makefile" tabindex="-1"><a class="observablehq-header-anchor" href="#6-install-the-ssh-key-used-by-the-root-makefile">6. Install the SSH key used by the root <code>makefile</code></a></h2>
-<p>The application expects one of these keys:</p>
-<ul>
-<li>the default AWS key at <code>~/.ssh/AWS-Echo-Key.pem</code>, or</li>
-<li>a temporary evaluation key installed at <code>~/.ssh/prof_eval_key</code>.</li>
-</ul>
-<p>If you were sent a temporary key, from the <strong>project root</strong> run:</p>
-<pre data-language="bash"><code class="language-bash">make temp
-</code></pre>
-<p>Then paste the full private key and press <code>Ctrl-D</code>.</p>
-<p>You can also use the one-block version:</p>
-<pre data-language="bash"><code class="language-bash">make temp &lt;&lt;<span class="hljs-string">'EOF'</span>
------BEGIN OPENSSH PRIVATE KEY-----
-[<span class="hljs-built_in">paste</span> the full private key here]
------END OPENSSH PRIVATE KEY-----
-EOF
-</code></pre>
-<p>The <code>makefile</code> validates the saved key and applies the correct file permissions automatically.</p>
-<h2 id="7-run-the-application" tabindex="-1"><a class="observablehq-header-anchor" href="#7-run-the-application">7. Run the application</a></h2>
-<p>From the <strong>repository root</strong>:</p>
+<h2 id="5-full-local-run" tabindex="-1"><a class="observablehq-header-anchor" href="#5-full-local-run">5. Full local run</a></h2>
+<p>Start the full stack from repository root:</p>
 <pre data-language="bash"><code class="language-bash">make app
 </code></pre>
-<p>On success, the completed local stack starts:</p>
+<p>Startup behavior:</p>
+<ol>
+<li>verifies key presence,</li>
+<li>opens SSH tunnel,</li>
+<li>activates <code>lmp-lite</code>,</li>
+<li>launches frontend and backend together.</li>
+</ol>
+<p>Default local endpoints:</p>
 <ul>
-<li><strong>Frontend:</strong> <code>http://127.0.0.1:3000</code></li>
-<li><strong>Backend:</strong> <code>http://127.0.0.1:8000</code></li>
+<li>Frontend: <code>http://127.0.0.1:3000</code></li>
+<li>Backend: <code>http://127.0.0.1:8000</code></li>
 </ul>
-<p>The root <code>makefile</code> also:</p>
-<ul>
-<li>checks for an SSH key,</li>
-<li>opens the SSH tunnel needed for database access,</li>
-<li>frees app ports if they are already in use,</li>
-<li>activates the <code>lmp-lite</code> Conda environment,</li>
-<li>launches the Observable frontend and FastAPI backend together.</li>
-</ul>
-<h2 id="8-stop-the-tunnel-app-session" tabindex="-1"><a class="observablehq-header-anchor" href="#8-stop-the-tunnel-app-session">8. Stop the tunnel / app session</a></h2>
-<p>To stop the SSH tunnel:</p>
+<p>Stop tunnel process:</p>
 <pre data-language="bash"><code class="language-bash">make stop
 </code></pre>
-<p>If the app is running in the foreground, you can also stop it with <code>Ctrl-C</code>.</p>
-<h2 id="9-useful-validation-commands" tabindex="-1"><a class="observablehq-header-anchor" href="#9-useful-validation-commands">9. Useful validation commands</a></h2>
-<p>If you only want to confirm the frontend docs and pages build correctly:</p>
-<pre data-language="bash"><code class="language-bash">npm run build
+<h2 id="6-reproducibility-paths" tabindex="-1"><a class="observablehq-header-anchor" href="#6-reproducibility-paths">6. Reproducibility paths</a></h2>
+<h3 id="a-static-demo-reproducibility" tabindex="-1"><a class="observablehq-header-anchor" href="#a-static-demo-reproducibility">A. Static demo reproducibility</a></h3>
+<p>Use when publishing or validating GitHub Pages output.</p>
+<p>If backend is available locally, refresh demo snapshot:</p>
+<pre data-language="bash"><code class="language-bash">python3 scripts/build_demo_snapshot.py --start-year 2020 --end-year 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12
 </code></pre>
-<p>If you want to inspect the available npm scripts:</p>
-<pre data-language="bash"><code class="language-bash">npm run
+<p>Build Pages artifacts:</p>
+<pre data-language="bash"><code class="language-bash">npm run build:docs
 </code></pre>
-<h2 id="10-troubleshooting" tabindex="-1"><a class="observablehq-header-anchor" href="#10-troubleshooting">10. Troubleshooting</a></h2>
-<h3 id="make-app-says-no-ssh-key-was-found" tabindex="-1"><a class="observablehq-header-anchor" href="#make-app-says-no-ssh-key-was-found"><code>make app</code> says no SSH key was found</a></h3>
-<p>Install the evaluation key with:</p>
-<pre data-language="bash"><code class="language-bash">make temp
-</code></pre>
-<p>or place the permanent key at:</p>
-<pre data-language="text"><code class="language-text">~/.ssh/AWS-Echo-Key.pem
-</code></pre>
-<h3 id="the-backend-cannot-connect-to-the-database" tabindex="-1"><a class="observablehq-header-anchor" href="#the-backend-cannot-connect-to-the-database">The backend cannot connect to the database</a></h3>
-<p>Check that:</p>
-<ul>
-<li><code>.env</code> exists,</li>
-<li><code>DB_HOST=127.0.0.1</code>,</li>
-<li><code>DB_PORT=5433</code>,</li>
-<li>the SSH tunnel started successfully,</li>
-<li>the credentials in <code>.env</code> match the provided database.</li>
-</ul>
-<h3 id="conda-activate-lmp-lite-fails" tabindex="-1"><a class="observablehq-header-anchor" href="#conda-activate-lmp-lite-fails"><code>conda activate lmp-lite</code> fails</a></h3>
-<p>Make sure Conda or Miniconda is installed and initialized for your shell.</p>
-<h3 id="the-frontend-fails-to-load" tabindex="-1"><a class="observablehq-header-anchor" href="#the-frontend-fails-to-load">The frontend fails to load</a></h3>
-<p>Reinstall dependencies:</p>
-<pre data-language="bash"><code class="language-bash">npm install
-</code></pre>
-<p>Then retry:</p>
+<h3 id="b-full-local-reproducibility" tabindex="-1"><a class="observablehq-header-anchor" href="#b-full-local-reproducibility">B. Full local reproducibility</a></h3>
+<p>Use when you need live API-backed behavior:</p>
 <pre data-language="bash"><code class="language-bash">make app
 </code></pre>
-<h3 id="ports-are-already-in-use" tabindex="-1"><a class="observablehq-header-anchor" href="#ports-are-already-in-use">Ports are already in use</a></h3>
-<p>The <code>makefile</code> tries to free ports automatically, but you can still inspect them manually:</p>
+<p>This requires valid <code>.env</code> credentials plus SSH key access.</p>
+<h2 id="7-runtime-architecture-and-data-flow" tabindex="-1"><a class="observablehq-header-anchor" href="#7-runtime-architecture-and-data-flow">7. Runtime architecture and data flow</a></h2>
+<p>The system runs in five layers:</p>
+<ol>
+<li>Makefile startup orchestration and tunnel handling.</li>
+<li>Observable frontend in <code>src/</code>.</li>
+<li>FastAPI backend in <code>api/backend.py</code>.</li>
+<li>PostgreSQL data store for retail, wholesale, and geometry data.</li>
+<li>Optional snapshot export to <code>src/data/demo/</code> for static demo delivery.</li>
+</ol>
+<p>Request flow in local mode:</p>
+<ol>
+<li>Frontend requests <code>/api/service_territory_price_data</code> and map data.</li>
+<li>Backend queries PostgreSQL via SQLAlchemy.</li>
+<li>Frontend computes average/monthly state and refreshes map, legend, and chart.</li>
+</ol>
+<p>Request flow in static demo mode:</p>
+<ol>
+<li>Frontend loads files from <code>data/demo/</code>.</li>
+<li>No backend/API calls are required.</li>
+</ol>
+<h2 id="8-common-issues" tabindex="-1"><a class="observablehq-header-anchor" href="#8-common-issues">8. Common issues</a></h2>
+<h3 id="missing-ssh-key" tabindex="-1"><a class="observablehq-header-anchor" href="#missing-ssh-key">Missing SSH key</a></h3>
+<p>Run:</p>
+<pre data-language="bash"><code class="language-bash">make temp
+</code></pre>
+<h3 id="backend-cannot-connect" tabindex="-1"><a class="observablehq-header-anchor" href="#backend-cannot-connect">Backend cannot connect</a></h3>
+<p>Verify <code>.env</code> exists and values match provided credentials, especially host <code>127.0.0.1</code> and port <code>5433</code>.</p>
+<h3 id="frontend-build-runtime-problems" tabindex="-1"><a class="observablehq-header-anchor" href="#frontend-build-runtime-problems">Frontend build/runtime problems</a></h3>
+<p>Reinstall dependencies and retry:</p>
+<pre data-language="bash"><code class="language-bash">npm install
+make app
+</code></pre>
+<h3 id="port-conflicts" tabindex="-1"><a class="observablehq-header-anchor" href="#port-conflicts">Port conflicts</a></h3>
+<p>Inspect active listeners:</p>
 <pre data-language="bash"><code class="language-bash">lsof -i :3000 -i :8000 -i :5433 -i :8001
 </code></pre>
-<h2 id="11-scope-of-this-setup" tabindex="-1"><a class="observablehq-header-anchor" href="#11-scope-of-this-setup">11. Scope of this setup</a></h2>
-<p>This setup guide is for <strong>running the completed dashboard</strong>, not rebuilding the entire data pipeline from scratch.</p>
-<p>The UI depends on a PostgreSQL database that already contains the expected service territory and pricing tables. The scripts in <code>src/hydrate/</code> are part of the broader data-maintenance workflow, but they are not required for the normal viewer/demo startup path.</p>
-<p>For product usage, see <a href="./USER_GUIDE">User Guide</a>. For technical design, see <a href="./ARCHITECTURE">System Architecture</a>.</p>
+<p>For dashboard interpretation and workflow, see <a href="./USER_GUIDE">User Guide</a>.</p>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-12T14:09:03">Apr 12, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T09:11:52">Apr 13, 2026</a>.</div>
 </footer>
 </div>
 </body>

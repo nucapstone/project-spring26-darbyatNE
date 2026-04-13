@@ -33,7 +33,8 @@ import "./_observablehq/client.16b578fc.js";
   </ol>
   <ol>
     <li class="observablehq-link observablehq-link-active"><a href="./OVERVIEW">Project Overview</a></li>
-    <li class="observablehq-link"><a href="./PIPELINE">Pipeline &amp; Reproducibility</a></li>
+    <li class="observablehq-link"><a href="./SETUP">Setup / Environment</a></li>
+    <li class="observablehq-link"><a href="./USER_GUIDE">User Guide</a></li>
     <li class="observablehq-link"><a href="./picker">Build A Filter</a></li>
   </ol>
 </nav>
@@ -43,27 +44,47 @@ import "./_observablehq/client.16b578fc.js";
 <nav>
 <div>Contents</div>
 <ol>
-<li class="observablehq-secondary-link"><a href="#1-what-this-repository-contains">1. What this repository contains</a></li>
-<li class="observablehq-secondary-link"><a href="#2-major-findings">2. Major findings</a></li>
-<li class="observablehq-secondary-link"><a href="#3-demo-site-versus-full-local-run">3. Demo site versus full local run</a></li>
-<li class="observablehq-secondary-link"><a href="#4-challenges-encountered">4. Challenges encountered</a></li>
-<li class="observablehq-secondary-link"><a href="#5-recommended-reading-order">5. Recommended reading order</a></li>
-<li class="observablehq-secondary-link"><a href="#6-reproducibility-note">6. Reproducibility note</a></li>
+<li class="observablehq-secondary-link"><a href="#1-scope-and-deliverable">1. Scope and deliverable</a></li>
+<li class="observablehq-secondary-link"><a href="#2-main-findings">2. Main findings</a></li>
+<li class="observablehq-secondary-link"><a href="#3-key-constraints-that-shaped-the-implementation">3. Key constraints that shaped the implementation</a></li>
+<li class="observablehq-secondary-link"><a href="#4-repository-layout-at-a-glance">4. Repository layout at a glance</a></li>
+<li class="observablehq-secondary-link"><a href="#5-where-to-go-next">5. Where to go next</a></li>
 </ol>
 </nav>
 </aside>
 <main id="observablehq-main" class="observablehq">
 <h1 id="project-overview-and-findings" tabindex="-1"><a class="observablehq-header-anchor" href="#project-overview-and-findings">Project Overview &amp; Findings</a></h1>
-<p>This project compares <strong>retail electricity prices</strong> with <strong>aggregated wholesale PJM prices</strong> across service territories.</p>
-<p>The main deliverable is an interactive dashboard that helps users inspect:</p>
+<p>This project compares retail electricity standard-offer rates with aggregated wholesale PJM prices across service territories.</p>
+<p>The central deliverable is an interactive map-based dashboard that lets users inspect:</p>
 <ul>
-<li>where retail service territories are located,</li>
-<li>which wholesale pricing points are associated with each territory,</li>
-<li>how average prices compare across territories, and</li>
-<li>how those comparisons change over time.</li>
+<li>where service territories are located,</li>
+<li>which wholesale pricing points are mapped to each territory,</li>
+<li>how retail and wholesale values compare across territories,</li>
+<li>and how those comparisons change over time.</li>
 </ul>
-<h2 id="1-what-this-repository-contains" tabindex="-1"><a class="observablehq-header-anchor" href="#1-what-this-repository-contains">1. What this repository contains</a></h2>
-<p>The repository has three main layers:</p>
+<h2 id="1-scope-and-deliverable" tabindex="-1"><a class="observablehq-header-anchor" href="#1-scope-and-deliverable">1. Scope and deliverable</a></h2>
+<p>This repository supports two use cases:</p>
+<ol>
+<li><strong>Static public demo</strong> served through GitHub Pages using snapshot files.</li>
+<li><strong>Full local run</strong> with backend connectivity for credentialed users.</li>
+</ol>
+<p>The intended outcome is transparency: helping users observe and verify retail-vs-wholesale differences by territory and month.</p>
+<h2 id="2-main-findings" tabindex="-1"><a class="observablehq-header-anchor" href="#2-main-findings">2. Main findings</a></h2>
+<ol>
+<li><strong>Retail-vs-wholesale relationships are not uniform across PJM territories.</strong></li>
+<li><strong>Irregularities appear both within and between neighboring territories.</strong></li>
+<li><strong>The observed mismatches are strong enough to justify deeper root-cause analysis.</strong></li>
+</ol>
+<p>This project is an analysis and interpretation tool, not a final causal model of why those mismatches occur.</p>
+<h2 id="3-key-constraints-that-shaped-the-implementation" tabindex="-1"><a class="observablehq-header-anchor" href="#3-key-constraints-that-shaped-the-implementation">3. Key constraints that shaped the implementation</a></h2>
+<ol>
+<li><strong>Access and permission constraints:</strong> backend and storage permissions had to balance secure access with practical runtime performance.</li>
+<li><strong>LMP-to-territory matching complexity:</strong> selecting representative pricing points for each territory required substantial preparation work.</li>
+<li><strong>PJM API limits:</strong> roughly six requests per minute and 50,000-row result limits constrained historical collection.</li>
+<li><strong>Older historical retrieval overhead:</strong> older windows often required broad pulls and local filtering.</li>
+</ol>
+<p>These constraints motivated the split between a static demo and a credentialed local runtime.</p>
+<h2 id="4-repository-layout-at-a-glance" tabindex="-1"><a class="observablehq-header-anchor" href="#4-repository-layout-at-a-glance">4. Repository layout at a glance</a></h2>
 <table>
 <thead>
 <tr>
@@ -74,95 +95,30 @@ import "./_observablehq/client.16b578fc.js";
 <tbody>
 <tr>
 <td style="text-align:left"><code>src/</code></td>
-<td style="text-align:left">Observable dashboard pages, UI components, styles, and documentation pages</td>
+<td style="text-align:left">Dashboard pages, UI components, styling, and documentation</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>api/</code></td>
-<td style="text-align:left">FastAPI backend used for local live data access</td>
+<td style="text-align:left">FastAPI backend for live local queries</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>src/hydrate/</code></td>
-<td style="text-align:left">Data preparation, maintenance, and supporting scripts</td>
+<td style="text-align:left">Data maintenance and hydration scripts</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>src/data/demo/</code></td>
+<td style="text-align:left">Snapshot files used by the GitHub Pages demo</td>
 </tr>
 </tbody>
 </table>
-<p>For a quick local run, see <a href="./SETUP">Setup / Environment</a>.
-For the system structure, see <a href="./ARCHITECTURE">System Architecture</a>.</p>
-<h2 id="2-major-findings" tabindex="-1"><a class="observablehq-header-anchor" href="#2-major-findings">2. Major findings</a></h2>
-<p>This repository is designed to make a few core findings reproducible and inspectable:</p>
+<h2 id="5-where-to-go-next" tabindex="-1"><a class="observablehq-header-anchor" href="#5-where-to-go-next">5. Where to go next</a></h2>
 <ol>
-<li>
-<p><strong>There are clear anomalies in the relationship between standard-offer retail electricity rates and their wholesale costs.</strong>
-The dashboard makes it possible to compare territory-level retail rates against grouped wholesale LMP values and shows that the relationship is not uniform across the PJM footprint.</p>
-</li>
-<li>
-<p><strong>Those anomalies appear both within and between service territories.</strong>
-Neighboring territories and territory-linked wholesale point groups can behave differently even when they are part of the same larger market context.</p>
-</li>
-<li>
-<p><strong>The observed pricing mismatches deserve deeper investigation.</strong>
-The project demonstrates that the differences are real and visible in the data, but it should be understood as a transparency and exploration tool rather than a final causal explanation of why those anomalies occur.</p>
-</li>
+<li>Read <a href="./SETUP">Setup / Environment</a> to run the project and reproduce outputs.</li>
+<li>Read <a href="./USER_GUIDE">User Guide</a> to interpret controls, layers, and chart behavior.</li>
 </ol>
-<p>Taken together, the reported result is not simply that prices differ, but that there are meaningful retail-versus-wholesale irregularities across territory groupings that merit follow-up analysis into root causes.</p>
-<h2 id="3-demo-site-versus-full-local-run" tabindex="-1"><a class="observablehq-header-anchor" href="#3-demo-site-versus-full-local-run">3. Demo site versus full local run</a></h2>
-<p>The GitHub Pages version of this project is a <strong>static demo</strong> built from a snapshot in <code>src/data/demo/</code>.</p>
-<p>That site is intended to let readers:</p>
-<ul>
-<li>understand the dashboard layout,</li>
-<li>inspect the visual design,</li>
-<li>explore the interaction model, and</li>
-<li>see a reproducible example dataset.</li>
-</ul>
-<p>The full local workflow adds:</p>
-<ul>
-<li>live backend access,</li>
-<li>credentialed database connectivity,</li>
-<li>SSH tunnel setup, and</li>
-<li>the ability to refresh or regenerate the underlying data products.</li>
-</ul>
-<h2 id="4-challenges-encountered" tabindex="-1"><a class="observablehq-header-anchor" href="#4-challenges-encountered">4. Challenges encountered</a></h2>
-<p>Several practical constraints shaped the final design:</p>
-<ol>
-<li>
-<p><strong>Backend permissions had to support both storage and timely access.</strong>
-A major challenge was configuring backend/database permissions so the project could store the required data products while still allowing access without significant delay in local runtime use.</p>
-</li>
-<li>
-<p><strong>Finding the correct representative LMPs for each service-territory grouping was non-trivial.</strong>
-The dashboard depends on mapping service territories to the appropriate wholesale pricing points, and that matching problem required substantial data-preparation work before the visualization could be trusted.</p>
-</li>
-<li>
-<p><strong>The PJM API limits made historical data collection slow and operationally difficult.</strong>
-The API allows only six requests per minute and no more than 50,000 rows per query result, which fills quickly when collecting hourly wholesale data across several hundred LMPs over a six-year period.</p>
-</li>
-<li>
-<p><strong>Older data was especially expensive to retrieve.</strong>
-For data older than two years, filtered queries were not sufficient; in practice, the workflow had to retrieve the full 13,188 LMP records and then filter locally for the subset needed.</p>
-</li>
-<li>
-<p><strong>Those infrastructure limits directly shaped the final architecture.</strong>
-They pushed the project toward staged data hydration, database-backed storage, grouped representative pricing points, and a split between a public static demo and a credentialed full local run.</p>
-</li>
-</ol>
-<h2 id="5-recommended-reading-order" tabindex="-1"><a class="observablehq-header-anchor" href="#5-recommended-reading-order">5. Recommended reading order</a></h2>
-<p>If you are new to the repository, use this order:</p>
-<ol>
-<li><a href="./USER_GUIDE">User Guide</a> for how to interpret the dashboard.</li>
-<li><a href="./SETUP">Setup / Environment</a> for local execution.</li>
-<li><a href="./PIPELINE">Pipeline &amp; Reproducibility</a> for how the data and results are assembled.</li>
-<li><a href="./ARCHITECTURE">System Architecture</a> for implementation details.</li>
-</ol>
-<h2 id="6-reproducibility-note" tabindex="-1"><a class="observablehq-header-anchor" href="#6-reproducibility-note">6. Reproducibility note</a></h2>
-<p>The repository supports two levels of reproducibility:</p>
-<ul>
-<li><strong>Static demo reproducibility</strong> through the checked-in snapshot used by GitHub Pages.</li>
-<li><strong>Full local reproducibility</strong> through the credentialed local runtime described in the setup and pipeline documentation.</li>
-</ul>
-<p>This page is intended as the front-facing summary of what the project does, what it found, and how to interpret the repository contents.</p>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-12T14:09:03">Apr 12, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T09:11:52">Apr 13, 2026</a>.</div>
 </footer>
 </div>
 </body>

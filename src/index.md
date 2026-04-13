@@ -48,10 +48,8 @@ pager: false
       <!-- Dropdown Menu -->
       <div id="header-help-menu" class="header-dropdown right-aligned" style="min-width: 210px;">
           <a href="./OVERVIEW">🧭 Project Overview</a>
-          <a href="./PIPELINE">🧪 Pipeline / Reproducibility</a>
           <a href="./USER_GUIDE" id="btn-guide">📖 User Guide</a>
         <a href="./SETUP" id="btn-setup">⚙️ Setup / Environment</a>
-          <a href="./ARCHITECTURE" id="btn-arch">🏗️ System Architecture</a>
       </div>
     </div>
   </div>
@@ -157,17 +155,6 @@ pager: false
   </div>
   <div id="guide-content" style="padding: 30px; background: white; max-height: 80vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
       <div style="text-align:center; color:#999;">Loading User Guide...</div>
-  </div>
-</dialog>
-
-<!-- Architecture Modal -->
-<dialog id="arch-modal" style="border: none; border-radius: 8px; padding: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 90vw; width: 800px;">
-  <div class="modal-header">
-    <span>🏗️ System Architecture</span>
-    <button onclick="document.getElementById('arch-modal').close()" class="close-btn">&times;</button>
-  </div>
-  <div id="arch-content" style="padding: 30px; background: white; max-height: 80vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
-      <div style="text-align:center; color:#999;">Loading Architecture...</div>
   </div>
 </dialog>
 
@@ -298,10 +285,9 @@ function cleanMarkdown(text) {
 
 (async () => {
   try {
-    const [setupText, guideText, archText] = await Promise.all([
+    const [setupText, guideText] = await Promise.all([
       FileAttachment("./SETUP.md").text(),
-      FileAttachment("./USER_GUIDE.md").text(),
-      FileAttachment("./ARCHITECTURE.md").text()
+      FileAttachment("./USER_GUIDE.md").text()
     ]);
 
     const setupEl = document.getElementById('setup-content');
@@ -309,9 +295,6 @@ function cleanMarkdown(text) {
 
     const guideEl = document.getElementById('guide-content');
     if (guideEl) guideEl.innerHTML = marked.parse(cleanMarkdown(guideText));
-
-    const archEl = document.getElementById('arch-content');
-    if (archEl) archEl.innerHTML = marked.parse(cleanMarkdown(archText));
     
   } catch (err) {
     console.error("Error loading docs:", err);
@@ -334,17 +317,6 @@ if (btnSetup) {
   btnSetup.addEventListener('click', (e) => {
     e.preventDefault();
     const modal = document.getElementById('setup-modal');
-    if (modal) modal.showModal();
-    const menu = document.getElementById('header-help-menu');
-    if (menu) menu.style.display = 'none';
-  });
-}
-
-const btnArch = document.getElementById('btn-arch');
-if (btnArch) {
-  btnArch.addEventListener('click', (e) => {
-    e.preventDefault();
-    const modal = document.getElementById('arch-modal');
     if (modal) modal.showModal();
     const menu = document.getElementById('header-help-menu');
     if (menu) menu.style.display = 'none';

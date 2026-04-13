@@ -200,8 +200,7 @@ Always read the legend together with the active filter window, since the scale u
 
 ## 12. Related project documents
 
-- For environment and startup instructions, see [Setup / Environment](./SETUP).
-- For the technical design of the application, see [System Architecture](./ARCHITECTURE).
+- For setup, reproducibility, and runtime flow, see [Setup / Environment](./SETUP).
 
 This guide reflects the final capstone interface and should be treated as the source of truth for current UI behavior.
 

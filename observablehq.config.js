@@ -18,8 +18,12 @@ export default {
       path: "/OVERVIEW"
     },
     {
-      name: "Pipeline & Reproducibility",
-      path: "/PIPELINE"
+      name: "Setup / Environment",
+      path: "/SETUP"
+    },
+    {
+      name: "User Guide",
+      path: "/USER_GUIDE"
     },
     {
       name: "Build A Filter", 
