@@ -87,11 +87,17 @@ body {
   gap: 6px;
   transition: background 0.2s;
 }
+.overview-callout:link,
+.overview-callout:visited,
+.overview-callout:active {
+  color: white !important;
+  text-decoration: none !important;
+}
 .header-btn:hover,
 .overview-callout:hover {
   background: #0056b3;
-  color: white;
-  text-decoration: none;
+  color: white !important;
+  text-decoration: none !important;
 }
 
 /* Dropdown Menu */
