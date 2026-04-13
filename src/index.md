@@ -89,7 +89,7 @@ pager: false
     </div>
     <!-- Right: Filter Trigger -->
     <!-- IMPORTANT: The ID inside here must be 'current-filter-display' -->
-    <div class="filter-container" id="filter-trigger" style="display: flex; align-items: center; justify-content: flex-start; gap: 12px; cursor: pointer; background: #dcdcdc; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); box-sizing: border-box; flex: 1 1 auto; min-width: 300px; margin-left: 16px;" title="Click to configure filters">
+    <div class="filter-container" id="filter-trigger" style="display: flex; align-items: center; justify-content: flex-start; gap: 12px; cursor: pointer; background: #dcdcdc; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); box-sizing: border-box; flex: 0 1 520px; width: 100%; max-width: 520px; min-width: 300px; margin-left: 16px;" title="Click to configure filters">
         <span class="filter-label" style="font-size: 12px; color: #666; font-weight: 600;">⚙️ Selected Months &rarr;</span>
         <div id="current-filter-display" style="min-width: 120px; text-align: left;">
             <span style="color: #999; font-style: italic; font-size: 12px;">Loading...</span>
