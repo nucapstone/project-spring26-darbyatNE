@@ -418,6 +418,20 @@ h4 {
 }
 .zone-item .zone-price { font-weight: bold; min-width: 40px; text-align: right; }
 
+.zone-item.pjm-row {
+  min-height: 34px;
+  padding: 6px 4px;
+}
+.zone-item.pjm-row .zone-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+.zone-item.pjm-row .pjm-recenter-hint {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
 .zone-checkbox { cursor: pointer; width: 14px; height: 14px; margin: 0; flex-shrink: 0; accent-color: #007bff; }
 .zone-item .zone-name { flex: 1; min-width: 0; }
 
