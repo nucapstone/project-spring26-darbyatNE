@@ -6,7 +6,7 @@
 ```js
 import { filter, saveFilter } from "./components/filter.js";
 import { dateTimeRangePicker } from "./components/picker.js";
-import { API_BASE_URL } from "../utils/config.js";
+import { API_BASE_URL } from "./utils/config.js";
 
 (async () => {
   // 1. Initialize Picker
