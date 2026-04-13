@@ -1,6 +1,7 @@
 ---
 title: Project Overview & Findings
 toc: true
+sidebar: false
 ---
 
 # Project Overview & Findings
