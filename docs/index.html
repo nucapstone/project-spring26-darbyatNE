@@ -18,8 +18,8 @@
 <link rel="modulepreload" href="./_import/components/ui.19956e65.js">
 <link rel="modulepreload" href="./_import/components/filter.9314faac.js">
 <link rel="modulepreload" href="./_import/components/picker.0a54784a.js">
-<link rel="modulepreload" href="./_import/components/zone_plot.c7713518.js">
 <link rel="modulepreload" href="./_import/utils/config.0d95a1cf.js">
+<link rel="modulepreload" href="./_import/components/zone_plot.c7713518.js">
 <link rel="modulepreload" href="./_import/managers/app_controller.16fd9e50.js">
 <link rel="modulepreload" href="./_npm/maplibre-gl@5.15.0/4c3c9e9c.js">
 <link rel="modulepreload" href="./_npm/d3@7.9.0/e780feca.js">
@@ -72,9 +72,14 @@ import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 registerFile("./SETUP.md", {"name":"./SETUP.md","mimeType":"text/markdown","path":"./_file/SETUP.b53749b5.md","lastModified":1776087968677,"size":3353});
 registerFile("./USER_GUIDE.md", {"name":"./USER_GUIDE.md","mimeType":"text/markdown","path":"./_file/USER_GUIDE.46474a80.md","lastModified":1776086167912,"size":7350});
 
-define({id: "b1c6a5c8", inputs: ["FileAttachment"], outputs: ["marked","initApp","initInfoModals","displayCurrentFilter","filter","saveFilter","dateTimeRangePicker","picker","mountPoint","lockTopControlBoxSize","cleanMarkdown","btnGuide","btnSetup"], body: async (FileAttachment) => {
-const [{marked}, {initApp}, {initInfoModals, displayCurrentFilter}, {filter, saveFilter}, {dateTimeRangePicker}] = await Promise.all([import("./_npm/marked@17.0.1/b499876a.js"), import("./_import/components/map.cf538d81.js"), import("./_import/components/ui.19956e65.js"), import("./_import/components/filter.9314faac.js"), import("./_import/components/picker.0a54784a.js")]);
+define({id: "9d2bf12d", inputs: ["FileAttachment"], outputs: ["marked","initApp","initInfoModals","displayCurrentFilter","filter","saveFilter","dateTimeRangePicker","IS_GITHUB_PAGES","summaryCards","picker","mountPoint","lockTopControlBoxSize","cleanMarkdown","btnGuide","btnSetup"], body: async (FileAttachment) => {
+const [{marked}, {initApp}, {initInfoModals, displayCurrentFilter}, {filter, saveFilter}, {dateTimeRangePicker}, {IS_GITHUB_PAGES}] = await Promise.all([import("./_npm/marked@17.0.1/b499876a.js"), import("./_import/components/map.cf538d81.js"), import("./_import/components/ui.19956e65.js"), import("./_import/components/filter.9314faac.js"), import("./_import/components/picker.0a54784a.js"), import("./_import/utils/config.0d95a1cf.js")]);
  
+
+const summaryCards = document.getElementById('summary-cards');
+if (summaryCards && !IS_GITHUB_PAGES) {
+  summaryCards.style.display = 'none';
+}
 
 // 1. Initialize UI
 initInfoModals();
@@ -243,7 +248,7 @@ document.addEventListener('click', function(event) {
     menu.style.display = 'none';
   }
 });
-return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dateTimeRangePicker,picker,mountPoint,lockTopControlBoxSize,cleanMarkdown,btnGuide,btnSetup};
+return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dateTimeRangePicker,IS_GITHUB_PAGES,summaryCards,picker,mountPoint,lockTopControlBoxSize,cleanMarkdown,btnGuide,btnSetup};
 }});
 
 </script>
@@ -297,7 +302,7 @@ return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dat
   </div>
 </div>
 <!-- Top Controls (Price Type & Filter) -->
-<div style="padding: 14px 20px 0 20px; background: linear-gradient(180deg, #fbfbf7 0%, #f4f4ef 100%); border-bottom: 1px solid #ddd;">
+<div id="summary-cards" style="padding: 14px 20px 0 20px; background: linear-gradient(180deg, #fbfbf7 0%, #f4f4ef 100%); border-bottom: 1px solid #ddd;">
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px;">
     <div style="background: white; border: 1px solid #d8d8cf; border-radius: 8px; padding: 12px 14px;">
       <div style="font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: #7a6f52; margin-bottom: 6px;">Project Goal</div>
@@ -391,10 +396,10 @@ return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dat
   </div>
 </dialog>
 <!-- 3. INITIALIZATION & CONTENT LOADING -->
-<div class="observablehq observablehq--block"><!--:b1c6a5c8:--></div>
+<div class="observablehq observablehq--block"><!--:9d2bf12d:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T14:22:58">Apr 13, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T14:26:47">Apr 13, 2026</a>.</div>
 </footer>
 </div>
 </body>

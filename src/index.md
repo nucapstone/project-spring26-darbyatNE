@@ -57,7 +57,7 @@ pager: false
 </div>
 
 <!-- Top Controls (Price Type & Filter) -->
-<div style="padding: 14px 20px 0 20px; background: linear-gradient(180deg, #fbfbf7 0%, #f4f4ef 100%); border-bottom: 1px solid #ddd;">
+<div id="summary-cards" style="padding: 14px 20px 0 20px; background: linear-gradient(180deg, #fbfbf7 0%, #f4f4ef 100%); border-bottom: 1px solid #ddd;">
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px;">
     <div style="background: white; border: 1px solid #d8d8cf; border-radius: 8px; padding: 12px 14px;">
       <div style="font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: #7a6f52; margin-bottom: 6px;">Project Goal</div>
@@ -166,6 +166,12 @@ import { initApp } from "./components/map.js";
 import { initInfoModals, displayCurrentFilter } from "./components/ui.js";
 import { filter, saveFilter } from "./components/filter.js";
 import { dateTimeRangePicker } from "./components/picker.js";
+import { IS_GITHUB_PAGES } from "./utils/config.js";
+
+const summaryCards = document.getElementById('summary-cards');
+if (summaryCards && !IS_GITHUB_PAGES) {
+  summaryCards.style.display = 'none';
+}
 
 // 1. Initialize UI
 initInfoModals();
