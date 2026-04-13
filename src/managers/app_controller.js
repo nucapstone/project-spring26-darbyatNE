@@ -462,10 +462,10 @@ export class MapController {
             return;
         }
 
-        // Scale behavior by view:
-        // - single-month view: use current frame values only
-        // - average view: use full selected-period dataset range
-        this.updateDynamicColorScales(!this.showAverageView);
+        // Scale behavior by displayed values:
+        // - single-month view: current frame values only
+        // - average view: zone averages over the selected period
+        this.updateDynamicColorScales(true);
 
         // 2. Build retail expression with price data
         const retailExpression = ['match', ['get', 'Zone_Code']];
