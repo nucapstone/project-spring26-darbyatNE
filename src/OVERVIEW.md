@@ -53,3 +53,16 @@ This project is an analysis and interpretation tool, not a final causal model of
 
 1. Read [Setup / Environment](./SETUP) to run the project and reproduce outputs.
 2. Read [User Guide](./USER_GUIDE) to interpret controls, layers, and chart behavior.
+
+### Developer continuation roadmap
+
+1. **Extend the template to other ISOs and service territories.**
+	Use the current PJM implementation as a template for adding other North American ISO balancing areas and their related service territories. The visual below identifies target ISO regions that can be added in future iterations.
+
+	![North American ISO balancing areas](./img/rto_map.png)
+
+2. **Build service-territory load profiles.**
+	Replace or augment simple wholesale price averaging with load-weighted calculations so average wholesale costs reflect usage patterns by hour, month, and territory.
+
+3. **Add additional wholesale cost components.**
+	Incorporate capacity charges, demand costs, and renewable energy credits (RECs) into the comparative framework. These categories may represent 30% or more of the total cost borne by retail service companies when supplying retail customers.
