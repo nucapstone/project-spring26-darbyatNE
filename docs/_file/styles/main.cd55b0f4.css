@@ -8,8 +8,9 @@
 }
 
 body {
-  overflow: hidden !important; /* scrollbars control*/
-  height: 90vh !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  min-height: 100vh !important;
 }
 
 /* Main Observable container */
