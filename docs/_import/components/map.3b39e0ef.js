@@ -8,7 +8,7 @@ import { dateTimeRangePicker } from "./picker.0a54784a.js";
 
 // 1. Removed ZONE_LABEL_OVERRIDES from the import
 import { API_BASE_URL, NET_COLOR_SCALE, STATIC_DEMO_MODE, DEMO_DATA_PATHS, IS_GITHUB_PAGES } from "../utils/config.0d95a1cf.js";
-import { MapController } from "../managers/app_controller.16fd9e50.js";
+import { MapController } from "../managers/app_controller.8db620e2.js";
 
 async function fetchJson(url) {
     const response = await fetch(url);

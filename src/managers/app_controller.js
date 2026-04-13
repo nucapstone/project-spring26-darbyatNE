@@ -462,9 +462,10 @@ export class MapController {
             return;
         }
 
-        // Recompute the scale from the prices currently being shown so the
-        // legend range updates whenever the filter or time window changes.
-        this.updateDynamicColorScales(true);
+        // Scale behavior by view:
+        // - single-month view: use current frame values only
+        // - average view: use full selected-period dataset range
+        this.updateDynamicColorScales(!this.showAverageView);
 
         // 2. Build retail expression with price data
         const retailExpression = ['match', ['get', 'Zone_Code']];
