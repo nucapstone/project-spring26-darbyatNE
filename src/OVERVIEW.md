@@ -38,9 +38,7 @@ This project is an analysis and interpretation tool, not a final causal model of
 1. **Access and permission constraints:** backend and storage permissions had to balance secure access with practical runtime performance.
 2. **LMP-to-territory matching complexity:** selecting representative pricing points for each territory required substantial preparation work.
 3. **PJM API limits:** roughly six requests per minute and 50,000-row result limits constrained historical collection.
-4. **Older historical retrieval overhead:** older windows often required broad pulls and local filtering.
-
-These constraints motivated the split between a static demo and a credentialed local runtime.
+4. **Older historical retrieval overhead:** 2+ year old data is archived and querying with filters is not possible.  This required broad pulls and local filtering.
 
 ## 4. Repository layout at a glance
 
