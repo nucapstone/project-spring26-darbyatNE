@@ -27,7 +27,7 @@ pager: false
 <!-- 1. Header With Ribbon for Help Docs & View Control -->
 <div id="page-header">
   <div class="header-left">
-    <a href="./OVERVIEW" class="overview-callout" title="Project Overview">🧭 Project Overview</a>
+    <a href="./OVERVIEW" id="btn-overview" class="overview-callout" title="Project Overview">🧭 Project Overview</a>
   </div>
   <h1>Retail Electricity Service Territories Map</h1>
   
@@ -134,6 +134,17 @@ pager: false
   </div>
   <div style="padding: 20px; background: white;">
     <div id="picker-mount-point"></div>
+  </div>
+</dialog>
+
+<!-- Overview Modal -->
+<dialog id="overview-modal" style="border: none; border-radius: 8px; padding: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 90vw; width: 900px;">
+  <div class="modal-header">
+    <span>🧭 Project Overview</span>
+    <button onclick="document.getElementById('overview-modal').close()" class="close-btn">&times;</button>
+  </div>
+  <div id="overview-content" style="padding: 30px; background: white; max-height: 90vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
+      <div style="text-align:center; color:#999;">Loading Project Overview...</div>
   </div>
 </dialog>
 
@@ -292,10 +303,14 @@ function cleanMarkdown(text) {
 
 (async () => {
   try {
-    const [setupText, guideText] = await Promise.all([
+    const [overviewText, setupText, guideText] = await Promise.all([
+      FileAttachment("./OVERVIEW.md").text(),
       FileAttachment("./SETUP.md").text(),
       FileAttachment("./USER_GUIDE.md").text()
     ]);
+
+    const overviewEl = document.getElementById('overview-content');
+    if (overviewEl) overviewEl.innerHTML = marked.parse(cleanMarkdown(overviewText));
 
     const setupEl = document.getElementById('setup-content');
     if (setupEl) setupEl.innerHTML = marked.parse(cleanMarkdown(setupText));
@@ -307,6 +322,15 @@ function cleanMarkdown(text) {
     console.error("Error loading docs:", err);
   }
 })();
+
+const btnOverview = document.getElementById('btn-overview');
+if (btnOverview) {
+  btnOverview.addEventListener('click', (e) => {
+    e.preventDefault();
+    const modal = document.getElementById('overview-modal');
+    if (modal) modal.showModal();
+  });
+}
 
 const btnGuide = document.getElementById('btn-guide');
 if (btnGuide) {

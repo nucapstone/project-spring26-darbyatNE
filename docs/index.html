@@ -69,10 +69,11 @@
 import {define} from "./_observablehq/client.16b578fc.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
+registerFile("./OVERVIEW.md", {"name":"./OVERVIEW.md","mimeType":"text/markdown","path":"./_file/OVERVIEW.5ff2bec0.md","lastModified":1776103997897,"size":3396});
 registerFile("./SETUP.md", {"name":"./SETUP.md","mimeType":"text/markdown","path":"./_file/SETUP.b53749b5.md","lastModified":1776087968677,"size":3353});
 registerFile("./USER_GUIDE.md", {"name":"./USER_GUIDE.md","mimeType":"text/markdown","path":"./_file/USER_GUIDE.46474a80.md","lastModified":1776086167912,"size":7350});
 
-define({id: "9d2bf12d", inputs: ["FileAttachment"], outputs: ["marked","initApp","initInfoModals","displayCurrentFilter","filter","saveFilter","dateTimeRangePicker","IS_GITHUB_PAGES","summaryCards","picker","mountPoint","lockTopControlBoxSize","cleanMarkdown","btnGuide","btnSetup"], body: async (FileAttachment) => {
+define({id: "19e3c804", inputs: ["FileAttachment"], outputs: ["marked","initApp","initInfoModals","displayCurrentFilter","filter","saveFilter","dateTimeRangePicker","IS_GITHUB_PAGES","summaryCards","picker","mountPoint","lockTopControlBoxSize","cleanMarkdown","btnOverview","btnGuide","btnSetup"], body: async (FileAttachment) => {
 const [{marked}, {initApp}, {initInfoModals, displayCurrentFilter}, {filter, saveFilter}, {dateTimeRangePicker}, {IS_GITHUB_PAGES}] = await Promise.all([import("./_npm/marked@17.0.1/b499876a.js"), import("./_import/components/map.cf538d81.js"), import("./_import/components/ui.19956e65.js"), import("./_import/components/filter.9314faac.js"), import("./_import/components/picker.0a54784a.js"), import("./_import/utils/config.0d95a1cf.js")]);
  
 
@@ -200,10 +201,14 @@ function cleanMarkdown(text) {
 
 (async () => {
   try {
-    const [setupText, guideText] = await Promise.all([
+    const [overviewText, setupText, guideText] = await Promise.all([
+      FileAttachment("./OVERVIEW.md").text(),
       FileAttachment("./SETUP.md").text(),
       FileAttachment("./USER_GUIDE.md").text()
     ]);
+
+    const overviewEl = document.getElementById('overview-content');
+    if (overviewEl) overviewEl.innerHTML = marked.parse(cleanMarkdown(overviewText));
 
     const setupEl = document.getElementById('setup-content');
     if (setupEl) setupEl.innerHTML = marked.parse(cleanMarkdown(setupText));
@@ -215,6 +220,15 @@ function cleanMarkdown(text) {
     console.error("Error loading docs:", err);
   }
 })();
+
+const btnOverview = document.getElementById('btn-overview');
+if (btnOverview) {
+  btnOverview.addEventListener('click', (e) => {
+    e.preventDefault();
+    const modal = document.getElementById('overview-modal');
+    if (modal) modal.showModal();
+  });
+}
 
 const btnGuide = document.getElementById('btn-guide');
 if (btnGuide) {
@@ -248,7 +262,7 @@ document.addEventListener('click', function(event) {
     menu.style.display = 'none';
   }
 });
-return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dateTimeRangePicker,IS_GITHUB_PAGES,summaryCards,picker,mountPoint,lockTopControlBoxSize,cleanMarkdown,btnGuide,btnSetup};
+return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dateTimeRangePicker,IS_GITHUB_PAGES,summaryCards,picker,mountPoint,lockTopControlBoxSize,cleanMarkdown,btnOverview,btnGuide,btnSetup};
 }});
 
 </script>
@@ -275,7 +289,7 @@ return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dat
 <!-- 1. Header With Ribbon for Help Docs & View Control -->
 <div id="page-header">
   <div class="header-left">
-    <a href="./OVERVIEW" class="overview-callout" title="Project Overview">🧭 Project Overview</a>
+    <a href="./OVERVIEW" id="btn-overview" class="overview-callout" title="Project Overview">🧭 Project Overview</a>
   </div>
   <h1>Retail Electricity Service Territories Map</h1>
   <div class="header-right" style="display: flex; align-items: center; gap: 15px;">    
@@ -375,6 +389,16 @@ return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dat
     <div id="picker-mount-point"></div>
   </div>
 </dialog>
+<!-- Overview Modal -->
+<dialog id="overview-modal" style="border: none; border-radius: 8px; padding: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 90vw; width: 900px;">
+  <div class="modal-header">
+    <span>🧭 Project Overview</span>
+    <button onclick="document.getElementById('overview-modal').close()" class="close-btn">×</button>
+  </div>
+  <div id="overview-content" style="padding: 30px; background: white; max-height: 90vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
+      <div style="text-align:center; color:#999;">Loading Project Overview...</div>
+  </div>
+</dialog>
 <!-- Setup Modal -->
 <dialog id="setup-modal" style="border: none; border-radius: 8px; padding: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 90vw; width: 800px;">
   <div class="modal-header">
@@ -396,10 +420,10 @@ return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dat
   </div>
 </dialog>
 <!-- 3. INITIALIZATION & CONTENT LOADING -->
-<div class="observablehq observablehq--block"><!--:9d2bf12d:--></div>
+<div class="observablehq observablehq--block"><!--:19e3c804:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T14:26:47">Apr 13, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T14:33:18">Apr 13, 2026</a>.</div>
 </footer>
 </div>
 </body>
