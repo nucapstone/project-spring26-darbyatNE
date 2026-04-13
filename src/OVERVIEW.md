@@ -49,12 +49,7 @@ This project is an analysis and interpretation tool, not a final causal model of
 | `src/hydrate/` | Data maintenance and hydration scripts |
 | `src/data/demo/` | Snapshot files used by the GitHub Pages demo |
 
-## 5. Where to go next
-
-1. Read [Setup / Environment](./SETUP) to run the project and reproduce outputs.
-2. Read [User Guide](./USER_GUIDE) to interpret controls, layers, and chart behavior.
-
-### Developer continuation roadmap
+## 5. What's Next?
 
 1. **Extend the template to other ISOs and service territories.**
 	Use the current PJM implementation as a template for adding other North American ISO balancing areas and their related service territories. The visual below identifies target ISO regions that can be added in future iterations.
