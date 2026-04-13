@@ -142,7 +142,7 @@ pager: false
     <span>⚙️ Setup Guide</span>
     <button onclick="document.getElementById('setup-modal').close()" class="close-btn">&times;</button>
   </div>
-  <div id="setup-content" style="padding: 30px; background: white; max-height: 80vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
+  <div id="setup-content" style="padding: 30px; background: white; max-height: 90vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
       <div style="text-align:center; color:#999;">Loading Setup Guide...</div>
   </div>
 </dialog>
@@ -153,7 +153,7 @@ pager: false
     <span>📖 User Guide</span>
     <button onclick="document.getElementById('guide-modal').close()" class="close-btn">&times;</button>
   </div>
-  <div id="guide-content" style="padding: 30px; background: white; max-height: 80vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
+  <div id="guide-content" style="padding: 30px; background: white; max-height: 90vh; overflow-y: auto; font-family: sans-serif; line-height: 1.6;">
       <div style="text-align:center; color:#999;">Loading User Guide...</div>
   </div>
 </dialog>

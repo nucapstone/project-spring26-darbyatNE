@@ -27,7 +27,9 @@ The intended outcome is transparency: helping users observe and verify retail-vs
 
 1. **Retail-vs-wholesale relationships are not uniform across PJM territories.**
 2. **Irregularities appear both within and between neighboring territories.**
-3. **The observed mismatches are strong enough to justify deeper root-cause analysis.**
+3. **Retail rates remain materially disparate even when service territories exhibit similar wholesale price levels over multi-year windows.**
+4. **Wholesale price movements appear to transmit to retail rates less strongly than expected, given that wholesale energy commonly accounts for roughly 60-70% of retail rate composition.**
+5. **These persistent mismatches warrant deeper root-cause investigation.**
 
 This project is an analysis and interpretation tool, not a final causal model of why those mismatches occur.
 
