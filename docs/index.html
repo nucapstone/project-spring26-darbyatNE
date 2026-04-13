@@ -69,7 +69,7 @@
 import {define} from "./_observablehq/client.16b578fc.js";
 import {registerFile} from "./_observablehq/stdlib.277aeab8.js";
 
-registerFile("./SETUP.md", {"name":"./SETUP.md","mimeType":"text/markdown","path":"./_file/SETUP.22db02d7.md","lastModified":1776086167912,"size":3454});
+registerFile("./SETUP.md", {"name":"./SETUP.md","mimeType":"text/markdown","path":"./_file/SETUP.b53749b5.md","lastModified":1776087968677,"size":3353});
 registerFile("./USER_GUIDE.md", {"name":"./USER_GUIDE.md","mimeType":"text/markdown","path":"./_file/USER_GUIDE.46474a80.md","lastModified":1776086167912,"size":7350});
 
 define({id: "b1c6a5c8", inputs: ["FileAttachment"], outputs: ["marked","initApp","initInfoModals","displayCurrentFilter","filter","saveFilter","dateTimeRangePicker","picker","mountPoint","lockTopControlBoxSize","cleanMarkdown","btnGuide","btnSetup"], body: async (FileAttachment) => {
@@ -265,11 +265,13 @@ return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dat
       });
   }
 </script>
-<link rel="stylesheet" href="./_file/styles/main.ad88006c.css">
+<link rel="stylesheet" href="./_file/styles/main.7401d3c3.css">
 <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
 <!-- 1. Header With Ribbon for Help Docs & View Control -->
 <div id="page-header">
-  <div class="header-left"></div>
+  <div class="header-left">
+    <a href="./OVERVIEW" class="overview-callout" title="Project Overview">🧭 Project Overview</a>
+  </div>
   <h1>Retail Electricity Service Territories Map</h1>
   <div class="header-right" style="display: flex; align-items: center; gap: 15px;">    
     <!-- View Mode Selector (HIDDEN) -->
@@ -288,9 +290,8 @@ return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dat
       </button>
       <!-- Dropdown Menu -->
       <div id="header-help-menu" class="header-dropdown right-aligned" style="min-width: 210px;">
-          <a href="./OVERVIEW">🧭 Project Overview</a>
           <a href="./USER_GUIDE" id="btn-guide">📖 User Guide</a>
-        <a href="./SETUP" id="btn-setup">⚙️ Setup / Environment</a>
+          <a href="./SETUP" id="btn-setup">⚙️ Setup / Environment</a>
       </div>
     </div>
   </div>
@@ -393,7 +394,7 @@ return {marked,initApp,initInfoModals,displayCurrentFilter,filter,saveFilter,dat
 <div class="observablehq observablehq--block"><!--:b1c6a5c8:--></div>
 </main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T09:33:31">Apr 13, 2026</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2026-04-13T09:56:21">Apr 13, 2026</a>.</div>
 </footer>
 </div>
 </body>

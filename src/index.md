@@ -26,7 +26,9 @@ pager: false
 
 <!-- 1. Header With Ribbon for Help Docs & View Control -->
 <div id="page-header">
-  <div class="header-left"></div>
+  <div class="header-left">
+    <a href="./OVERVIEW" class="overview-callout" title="Project Overview">🧭 Project Overview</a>
+  </div>
   <h1>Retail Electricity Service Territories Map</h1>
   
   <div class="header-right" style="display: flex; align-items: center; gap: 15px;">    
@@ -47,9 +49,8 @@ pager: false
       </button>
       <!-- Dropdown Menu -->
       <div id="header-help-menu" class="header-dropdown right-aligned" style="min-width: 210px;">
-          <a href="./OVERVIEW">🧭 Project Overview</a>
           <a href="./USER_GUIDE" id="btn-guide">📖 User Guide</a>
-        <a href="./SETUP" id="btn-setup">⚙️ Setup / Environment</a>
+          <a href="./SETUP" id="btn-setup">⚙️ Setup / Environment</a>
       </div>
     </div>
   </div>

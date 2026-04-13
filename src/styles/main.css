@@ -47,8 +47,31 @@ body {
   text-align: center;
 }
 
-.header-left { display: flex; justify-content: flex-start; }
+.header-left { display: flex; justify-content: flex-start; align-items: center; }
 .header-right { display: flex; justify-content: flex-end; }
+
+.overview-callout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.55);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.overview-callout:hover {
+  background: rgba(255,255,255,0.28);
+  border-color: #fff;
+  color: #fff;
+  text-decoration: none;
+}
 
 .header-select-box {
   padding: 6px 10px;

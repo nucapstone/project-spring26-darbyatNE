@@ -167,12 +167,4 @@ npm install
 make app
 ```
 
-### Port conflicts
-
-Inspect active listeners:
-
-```bash
-lsof -i :3000 -i :8000 -i :5433 -i :8001
-```
-
 For dashboard interpretation and workflow, see [User Guide](./USER_GUIDE).
