@@ -53,9 +53,7 @@ This project is an analysis and interpretation tool, not a final causal model of
 ## 5. What's Next?
 
 1. **Extend the template to other ISOs and service territories.**
-	Use the current PJM implementation as a template for adding other North American ISO balancing areas and their related service territories. The visual below identifies target ISO regions that can be added in future iterations.
-
-	![North American ISO balancing areas](./img/rto_map.png)
+	Use the current PJM implementation as a template for adding other North American ISO balancing areas and their related service territories. Several other North American ISOs use the Standard market Design developed by PJM, making this method expandable.
 
 2. **Build service-territory load profiles.**
 	Replace or augment simple wholesale price averaging with load-weighted calculations so average wholesale costs reflect usage patterns by hour, month, and territory.
